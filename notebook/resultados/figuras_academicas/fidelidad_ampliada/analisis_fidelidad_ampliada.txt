@@ -1,0 +1,77 @@
+# Analisis de fidelidad ampliada, Quantus y SHAP
+
+Esta carpeta se creo para fortalecer la parte de fidelidad XAI. La observacion principal era correcta: en la version anterior la fidelidad estaba calculada principalmente sobre pocos ejemplos seleccionados para visualizacion. Eso servia como evidencia preliminar, pero era debil para defender cuantitativamente la fidelidad de las explicaciones.
+
+## Que se mejoro
+
+Se agrego una evaluacion ampliada tipo Faithfulness Correlation sobre una muestra estratificada del conjunto de test. En vez de usar solo los ejemplos visuales, ahora se evaluaron 260 muestras unicas en total: 132 de Kepler y 128 de TESS. La muestra fue seleccionada por resultado de matriz de confusion, incluyendo verdaderos negativos, falsos positivos, falsos negativos y verdaderos positivos. Para los grupos con pocos errores se usaron todos los casos disponibles dentro del limite definido.
+
+La evaluacion usa hasta 40 ejemplos por outcome (`TN`, `FP`, `FN`, `TP`) en cada dataset. Esto permite comparar si la fidelidad cambia entre aciertos y errores, y evita que el resultado dependa solamente de casos escogidos manualmente para verse bien en las figuras.
+
+## Sobre Quantus
+
+Quantus no fue usado literalmente como biblioteca. Es importante no afirmar en el informe que se importo o ejecuto Quantus. Lo que se implemento es una metrica equivalente en objetivo a Faithfulness Correlation: se perturban regiones de la entrada, se mide el cambio en la confianza del modelo y se correlaciona ese cambio con la importancia asignada por el metodo XAI.
+
+La forma correcta de escribirlo es:
+
+"Se calculo una metrica tipo Faithfulness Correlation, equivalente en objetivo a la implementacion disponible en Quantus, pero implementada localmente para mantener reproducibilidad del pipeline y evitar agregar dependencias nuevas."
+
+Esto responde al requerimiento metodologico sin declarar algo falso. La metrica calculada sigue la misma idea: si una region recibe alta atribucion XAI, perturbar esa region deberia producir una mayor caida en la confianza del modelo.
+
+## Sobre SHAP
+
+SHAP no fue usado. Conviene eliminarlo del paper para no sobrecargar la metodologia ni generar una expectativa que no corresponde. En este problema, SHAP por punto temporal seria caro y dificil de interpretar, especialmente en Kepler, donde la vista global tiene 2001 puntos. El analisis queda mejor defendido con Saliency, Integrated Gradients, Occlusion, Consensus, MC Dropout y fidelidad.
+
+## Como se calculo la fidelidad ampliada
+
+Para cada muestra se explico la clase predicha por el modelo. Esto es importante: la fidelidad mide si el mapa XAI explica la decision tomada por el modelo, no necesariamente si explica la etiqueta verdadera.
+
+Luego, para cada muestra se hicieron 32 perturbaciones aleatorias. En cada perturbacion se apago el 10% de los puntos de la vista global y el 10% de los puntos de la vista local. Para cada perturbacion se midio cuanto caia la confianza del modelo hacia la clase predicha. Finalmente se calculo la correlacion entre:
+
+- la suma de atribucion XAI en los puntos perturbados;
+- la caida de confianza despues de perturbar esos puntos.
+
+Si la correlacion es positiva, significa que las zonas marcadas como importantes tienden a producir mayor efecto real en la salida del modelo. Si la correlacion esta cerca de cero, la fidelidad es debil. Si es negativa, el metodo podria estar resaltando regiones que no explican bien la decision bajo este protocolo.
+
+## Resultados principales
+
+En Kepler, la fidelidad ampliada fue positiva pero debil/moderada. El mejor metodo fue Integrated Gradients, con Pearson=0.1659 y Spearman=0.1668. Luego aparecen Consensus con Pearson=0.1598 y Spearman=0.1478, Saliency con Pearson=0.1267 y Spearman=0.1454, y Occlusion con Pearson=0.1255 y Spearman=0.1049.
+
+Esto significa que en Kepler las explicaciones tienen cierta relacion con el comportamiento del modelo, pero no una fidelidad fuerte. La conclusion correcta no es que las explicaciones sean malas, sino que deben interpretarse como evidencia parcial. Kepler tiene curvas mas largas, mayor numero de puntos temporales y mas posibilidades de que una perturbacion aleatoria afecte regiones que no son semanticamente equivalentes a un cambio fisico real.
+
+En TESS, la fidelidad fue mas fuerte. Occlusion fue el mejor metodo, con Pearson=0.5390 y Spearman=0.5544. Luego aparecen Consensus con Pearson=0.4013 y Spearman=0.4081, Integrated Gradients con Pearson=0.2879 y Spearman=0.2960, y Saliency con Pearson=0.1063 y Spearman=0.0999.
+
+Este resultado es bastante defendible. En TESS, Occlusion muestra una correlacion moderada-alta para este contexto, lo que indica que las zonas consideradas importantes efectivamente tienden a cambiar la confianza del modelo cuando se intervienen. Consensus tambien funciona bien, porque combina informacion de varios mapas y reduce dependencia de un unico metodo.
+
+## Diferencias por tipo de resultado
+
+Al separar por `TN`, `FP`, `FN` y `TP`, se observa que la fidelidad no es uniforme. En TESS, Occlusion funciona muy bien en falsos positivos y verdaderos positivos, con Pearson cercano a 0.70 en ambos grupos. Esto tiene sentido: en estos casos el modelo probablemente esta reaccionando a una estructura clara tipo transito, por lo que borrar regiones importantes cambia mucho la confianza.
+
+En falsos negativos, la fidelidad baja e incluso algunos metodos quedan negativos. Esto tambien es interpretable: si el modelo predice negativo en una muestra positiva, puede estar usando evidencia dispersa, ausencia de rasgos esperados o ruido. En ese escenario, perturbar regiones marcadas por un metodo XAI no necesariamente reduce la confianza hacia la clase predicha; a veces incluso puede aumentarla.
+
+En Kepler, los falsos positivos y verdaderos positivos son los grupos con mejor fidelidad. Los falsos negativos y verdaderos negativos muestran resultados mas debiles o negativos en algunos metodos. Esto refuerza la idea de que XAI explica mejor decisiones positivas o transit-like que decisiones negativas basadas en ausencia de evidencia.
+
+## Que significa para el informe
+
+La version final del informe deberia reportar la fidelidad ampliada como resultado principal. La fidelidad calculada sobre 6 ejemplos puede quedar como analisis visual complementario, pero no deberia ser la unica evidencia cuantitativa. La frase recomendada es:
+
+"Para fortalecer la evaluacion, se calculo Faithfulness Correlation sobre una muestra estratificada ampliada del test set, con 132 ejemplos de Kepler y 128 de TESS. Los resultados muestran fidelidad positiva pero moderada en Kepler, e indican que Occlusion es el metodo mas fiel en TESS."
+
+Tambien se debe incluir una advertencia metodologica:
+
+"Dado que el modelo es una red neuronal convolucional no lineal, estas metricas se interpretan como evidencia comparativa entre metodos XAI y no como prueba causal absoluta. Esto es consistente con la literatura reciente, que senala que las metricas de fidelidad son mas confiables en modelos lineales que en redes neuronales profundas."
+
+## Archivos generados
+
+- `calcular_fidelidad_ampliada.py`: script reproducible para recalcular la evaluacion.
+- `faithfulness_ampliada_by_sample.csv`: resultados por muestra, metodo y dataset.
+- `faithfulness_ampliada_summary.csv`: resumen por dataset y metodo.
+- `faithfulness_ampliada_by_outcome.csv`: resumen por dataset, outcome y metodo.
+- `faithfulness_correlation_ampliada_por_metodo.png`: comparacion de Pearson/Spearman por metodo.
+- `faithfulness_correlation_ampliada_distribucion.png`: distribucion de correlaciones por muestra.
+- `faithfulness_occlusion_ampliada_por_resultado.png`: fidelidad de Occlusion por tipo de resultado.
+- `README_fidelidad_ampliada.txt`: resumen corto de metodologia, interpretacion y texto sugerido para el paper.
+
+## Conclusion
+
+La mejora realizada resuelve la debilidad principal del analisis anterior: la fidelidad ya no depende solo de pocos ejemplos visuales. Ahora existe una evaluacion ampliada, estratificada y reproducible. El resultado mas importante es que las explicaciones tienen fidelidad parcial y dependiente del metodo. TESS muestra una fidelidad mas fuerte, especialmente con Occlusion; Kepler muestra una fidelidad positiva pero mas moderada. Esto permite defender el bloque XAI de forma honesta: las explicaciones ayudan a interpretar el modelo, pero deben usarse con cautela y siempre como complemento de metricas de desempeno, incertidumbre y validacion cuantitativa.

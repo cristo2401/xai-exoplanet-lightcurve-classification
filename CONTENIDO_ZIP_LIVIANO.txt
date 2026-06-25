@@ -1,0 +1,36 @@
+# Contenido del ZIP liviano para GitHub
+
+Este ZIP esta preparado para subir a GitHub siguiendo buenas practicas:
+
+Incluye:
+
+- Codigo fuente principal.
+- TFRecords de Kepler y TESS necesarios para regenerar HDF5.
+- Modelos campeones `.pth` para ejecutar XAI sin reentrenar.
+- Metricas, tablas y figuras principales de la entrega.
+- Notebook ordenado de resultados.
+- Figuras academicas principales en espanol e ingles.
+- Evaluacion ampliada de fidelidad XAI.
+- `.gitignore`, `.gitattributes` y validacion de reproducibilidad.
+
+No incluye:
+
+- Archivos `.h5` generados localmente.
+- Caches de Python.
+- ZIPs internos.
+- Figuras intermedias o suplementarias duplicadas que se pueden regenerar.
+
+Para regenerar los HDF5:
+
+```bash
+python codigo/convertir_kepler_tfrecord_a_h5.py --output_h5 datos_procesados_h5/kepler_dataset.h5
+python codigo/convertir_tess_tfrecord_a_h5.py --mode pc_only --output_h5 datos_procesados_h5/tess_dataset.h5
+python codigo/convertir_tess_tfrecord_a_h5.py --mode triage --output_h5 datos_procesados_h5/tess_dataset_triage.h5
+```
+
+Para regenerar XAI:
+
+```bash
+python xai_mejores_modelos.py --dataset both --mc-samples 100 --smooth-samples 32 --ig-steps 64 --max-examples 6 --batch-size 512
+python notebook/generar_notebook_resultados.py
+```

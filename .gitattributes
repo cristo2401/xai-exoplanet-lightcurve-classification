@@ -1,0 +1,5 @@
+*.ipynb linguist-documentation=true
+*.csv text
+*.txt text
+*.md text
+*.py text eol=lf

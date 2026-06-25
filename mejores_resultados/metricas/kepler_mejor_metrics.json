@@ -1,0 +1,42 @@
+{
+  "dataset": "Kepler",
+  "objective": "PC vs no-PC",
+  "config": {
+    "preprocess": "zscore",
+    "loss": "bce",
+    "lr": 0.0002,
+    "dropout": 0.1,
+    "flip_prob": 0.3,
+    "noise_std": 0.005,
+    "use_pos_weight": false,
+    "seed": 29
+  },
+  "best_val_f1_0_5": 0.8906882591093117,
+  "best_val_f1_any": 0.8906882591093117,
+  "best_thr": 0.5000000000000001,
+  "test_0_5": {
+    "accuracy": 0.9669631512071156,
+    "precision": 0.9074074074074074,
+    "recall": 0.9527777777777777,
+    "f1": 0.9295392953929539,
+    "mcc": 0.9084402793003519,
+    "pred_pos_rate": 0.24015247776365947
+  },
+  "test_best": {
+    "accuracy": 0.9669631512071156,
+    "precision": 0.9074074074074074,
+    "recall": 0.9527777777777777,
+    "f1": 0.9295392953929539,
+    "mcc": 0.9084402793003519,
+    "pred_pos_rate": 0.24015247776365947
+  },
+  "test_ap": 0.9450078410731126,
+  "sizes": {
+    "train": 12589,
+    "val": 1574,
+    "test": 1574,
+    "train_pos": 2885,
+    "val_pos": 355,
+    "test_pos": 360
+  }
+}

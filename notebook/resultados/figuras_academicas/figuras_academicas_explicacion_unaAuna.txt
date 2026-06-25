@@ -1,0 +1,545 @@
+# Explicacion una a una de figuras academicas XAI
+
+Este documento explica, una por una, las figuras ubicadas en `figuras_academicas/`. Para evitar duplicar contenido, cada entrada agrupa la version en espanol y la version en ingles de la misma figura. Las conclusiones se basan en las tablas CSV generadas por el pipeline XAI, no solo en interpretacion visual.
+
+Nota importante: la fidelidad cuantitativa fue ampliada posteriormente en `fidelidad_ampliada/`. Las figuras antiguas de Faithfulness Correlation y deletion AUC siguen siendo utiles como material visual complementario, pero para el informe conviene reportar como evidencia principal la evaluacion ampliada sobre 260 muestras estratificadas del test set.
+
+## Como leer este documento
+
+- `Figuras principales`: son las recomendadas para el cuerpo del informe o paper.
+- `Material suplementario`: contiene todas las figuras de respaldo experimental: mapas XAI individuales, calibracion, incertidumbre, fidelidad, contrafactuales y metricas auxiliares.
+- Las rutas son relativas a esta carpeta `figuras_academicas/`.
+
+## Conclusiones globales antes del detalle
+
+- Kepler: matriz normalizada con TN=97.1%, FP=2.9%, FN=4.7% y TP=95.3%.
+
+- TESS: matriz normalizada con TN=98.0%, FP=2.0%, FN=7.2% y TP=92.8%.
+
+- Kepler: mejor fidelidad por borrado = `consensus` (AUC=0.459); mejor Faithfulness Correlation = `integrated_gradients` (Pearson=0.212, Spearman=0.246).
+
+- TESS: mejor fidelidad por borrado = `occlusion` (AUC=0.386); mejor Faithfulness Correlation = `occlusion` (Pearson=0.496, Spearman=0.514).
+
+
+---
+
+# 1. Figuras principales para paper
+
+## 1.1. Kepler: figuras principales
+
+### Kepler - Matriz de confusion normalizada con resumen XAI
+
+Archivo ES: [`espanol/figuras_principales/kepler_figura_principal_matriz_confusion_normalizada_atencion_xai.png`](espanol/figuras_principales/kepler_figura_principal_matriz_confusion_normalizada_atencion_xai.png)
+
+Archivo EN: [`english/main_figures/kepler_main_figure_row_normalized_confusion_matrix_xai_attention.png`](english/main_figures/kepler_main_figure_row_normalized_confusion_matrix_xai_attention.png)
+
+**Analisis.** La figura cruza etiqueta real contra prediccion y normaliza cada fila para que las clases real 0 y real 1 sean comparables. En Kepler, la diagonal domina: TN=97.1% y TP=95.3%. Los errores se concentran en FP=2.9% y FN=4.7%. El texto de cada celda anade estadisticos XAI: media de focos, desviacion y dispersion temporal. En los aciertos positivos, la centralidad media es 0.410, mientras que en TN baja a 0.250, lo que indica que los negativos correctos tienden a tener relevancia menos concentrada en la ventana de transito.
+
+**Conclusion.** La matriz es apropiada para mostrar desempeno y comportamiento XAI al mismo tiempo. La conclusion principal es que el modelo clasifica bien en terminos globales, pero los errores no se explican solo por cantidad de focos: importa mas donde se concentran y que tan confiable es la prediccion.
+
+### Kepler - Violin plot del score de riesgo de atencion XAI
+
+Archivo ES: [`espanol/figuras_principales/kepler_figura_principal_violin_score_riesgo_atencion_xai.png`](espanol/figuras_principales/kepler_figura_principal_violin_score_riesgo_atencion_xai.png)
+
+Archivo EN: [`english/main_figures/kepler_main_figure_xai_attention_risk_score_violin.png`](english/main_figures/kepler_main_figure_xai_attention_risk_score_violin.png)
+
+**Analisis.** Este violin plot resume la distribucion del `attention_risk_score`, una metrica compuesta que sube cuando hay menor centralidad, mayor dispersion, mas focos, mayor incertidumbre o menor confianza. En Kepler, el mayor riesgo promedio aparece en FP (0.403) y el menor en TP (0.348). Esto permite comparar no solo el promedio, sino tambien la variabilidad interna de cada tipo de resultado.
+
+**Conclusion.** Es una de las mejores figuras para conclusiones, porque transforma muchos indicadores XAI en una lectura compacta. Sirve para argumentar que las explicaciones pueden funcionar como detector auxiliar de predicciones dificiles, aunque no reemplazan la metrica de clasificacion.
+
+### Kepler - Violin plot de focos y varianza de atencion
+
+Archivo ES: [`espanol/figuras_principales/kepler_figura_principal_violin_focos_y_varianza_atencion.png`](espanol/figuras_principales/kepler_figura_principal_violin_focos_y_varianza_atencion.png)
+
+Archivo EN: [`english/main_figures/kepler_main_figure_attention_focus_count_and_variance_violin.png`](english/main_figures/kepler_main_figure_attention_focus_count_and_variance_violin.png)
+
+**Analisis.** La mitad izquierda muestra la cantidad de focos de atencion; la mitad derecha muestra la varianza de posicion temporal de la atencion. En Kepler, TP tiene 6.23 focos en promedio y TN tiene 5.68. La dispersion temporal promedio es mayor en TN (0.075) que en TP (0.054), lo que sugiere que las predicciones negativas correctas se apoyan en evidencia mas distribuida.
+
+**Conclusion.** Esta figura responde directamente a la pregunta sobre si errores y aciertos difieren en numero y dispersion de focos. La cantidad de focos por si sola no separa perfectamente errores, pero la dispersion y la centralidad aportan informacion diagnostica util.
+
+## 1.2. TESS: figuras principales
+
+### TESS - Matriz de confusion normalizada con resumen XAI
+
+Archivo ES: [`espanol/figuras_principales/tess_figura_principal_matriz_confusion_normalizada_atencion_xai.png`](espanol/figuras_principales/tess_figura_principal_matriz_confusion_normalizada_atencion_xai.png)
+
+Archivo EN: [`english/main_figures/tess_main_figure_row_normalized_confusion_matrix_xai_attention.png`](english/main_figures/tess_main_figure_row_normalized_confusion_matrix_xai_attention.png)
+
+**Analisis.** La figura cruza etiqueta real contra prediccion y normaliza cada fila para que las clases real 0 y real 1 sean comparables. En TESS, la diagonal domina: TN=98.0% y TP=92.8%. Los errores se concentran en FP=2.0% y FN=7.2%. El texto de cada celda anade estadisticos XAI: media de focos, desviacion y dispersion temporal. En los aciertos positivos, la centralidad media es 0.352, mientras que en TN baja a 0.256, lo que indica que los negativos correctos tienden a tener relevancia menos concentrada en la ventana de transito.
+
+**Conclusion.** La matriz es apropiada para mostrar desempeno y comportamiento XAI al mismo tiempo. La conclusion principal es que el modelo clasifica bien en terminos globales, pero los errores no se explican solo por cantidad de focos: importa mas donde se concentran y que tan confiable es la prediccion.
+
+### TESS - Violin plot del score de riesgo de atencion XAI
+
+Archivo ES: [`espanol/figuras_principales/tess_figura_principal_violin_score_riesgo_atencion_xai.png`](espanol/figuras_principales/tess_figura_principal_violin_score_riesgo_atencion_xai.png)
+
+Archivo EN: [`english/main_figures/tess_main_figure_xai_attention_risk_score_violin.png`](english/main_figures/tess_main_figure_xai_attention_risk_score_violin.png)
+
+**Analisis.** Este violin plot resume la distribucion del `attention_risk_score`, una metrica compuesta que sube cuando hay menor centralidad, mayor dispersion, mas focos, mayor incertidumbre o menor confianza. En TESS, el mayor riesgo promedio aparece en FN (0.447) y el menor en TP (0.332). Esto permite comparar no solo el promedio, sino tambien la variabilidad interna de cada tipo de resultado.
+
+**Conclusion.** Es una de las mejores figuras para conclusiones, porque transforma muchos indicadores XAI en una lectura compacta. Sirve para argumentar que las explicaciones pueden funcionar como detector auxiliar de predicciones dificiles, aunque no reemplazan la metrica de clasificacion.
+
+### TESS - Violin plot de focos y varianza de atencion
+
+Archivo ES: [`espanol/figuras_principales/tess_figura_principal_violin_focos_y_varianza_atencion.png`](espanol/figuras_principales/tess_figura_principal_violin_focos_y_varianza_atencion.png)
+
+Archivo EN: [`english/main_figures/tess_main_figure_attention_focus_count_and_variance_violin.png`](english/main_figures/tess_main_figure_attention_focus_count_and_variance_violin.png)
+
+**Analisis.** La mitad izquierda muestra la cantidad de focos de atencion; la mitad derecha muestra la varianza de posicion temporal de la atencion. En TESS, TP tiene 8.55 focos en promedio y TN tiene 8.18. La dispersion temporal promedio es mayor en TN (0.064) que en TP (0.050), lo que sugiere que las predicciones negativas correctas se apoyan en evidencia mas distribuida.
+
+**Conclusion.** Esta figura responde directamente a la pregunta sobre si errores y aciertos difieren en numero y dispersion de focos. La cantidad de focos por si sola no separa perfectamente errores, pero la dispersion y la centralidad aportan informacion diagnostica util.
+
+
+---
+
+# 2. Material suplementario explicado una figura a la vez
+
+## 2.1. Kepler: material suplementario
+
+### Kepler - Importancia agregada en ejemplos seleccionados
+
+Archivo ES: [`espanol/material_suplementario/kepler_importancia_agregada_ejemplos_seleccionados.png`](espanol/material_suplementario/kepler_importancia_agregada_ejemplos_seleccionados.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_aggregate_importance_selected_examples.png`](english/supplementary_figures/kepler_aggregate_importance_selected_examples.png)
+
+**Analisis.** Esta figura promedia mapas de importancia en casos representativos. Sirve para comparar Saliency, SmoothGrad, Integrated Gradients, Grad-CAM, Grad-CAM multiescala, Occlusion y Consenso. En Kepler, la centralidad por metodo se resume como global: `gradcam_multiscale`=0.392; local: `gradcam_multiscale`=0.718.
+
+**Conclusion.** La figura muestra que los metodos basados en entrada/intervencion tienden a ser mas interpretables que Grad-CAM clasico cuando hay pooling temporal. Es evidencia visual para justificar usar Occlusion, Integrated Gradients y Consenso como explicaciones principales.
+
+### Kepler - Boxplot de focos de atencion y dispersion
+
+Archivo ES: [`espanol/material_suplementario/kepler_boxplot_focos_atencion_dispersion_por_resultado.png`](espanol/material_suplementario/kepler_boxplot_focos_atencion_dispersion_por_resultado.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_attention_focus_dispersion_boxplot_by_outcome.png`](english/supplementary_figures/kepler_attention_focus_dispersion_boxplot_by_outcome.png)
+
+**Analisis.** Este boxplot complementa los violin plots principales. Muestra que las distribuciones por outcome tienen solapamiento considerable: por ejemplo, foco medio TP=6.23, FP=5.71, FN=5.41 y TN=5.68.
+
+**Conclusion.** La cantidad de focos no es un clasificador de errores por si sola. Su utilidad aparece al combinarla con dispersion, centralidad, confianza y MC Dropout.
+
+### Kepler - Centralidad de importancia por metodo XAI
+
+Archivo ES: [`espanol/material_suplementario/kepler_centralidad_importancia_por_metodo_xai.png`](espanol/material_suplementario/kepler_centralidad_importancia_por_metodo_xai.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_central_importance_ratio_by_xai_method.png`](english/supplementary_figures/kepler_central_importance_ratio_by_xai_method.png)
+
+**Analisis.** La figura compara la fraccion de importancia dentro de la ventana central del transito. Resultado resumido: global: `gradcam_multiscale`=0.392; local: `gradcam_multiscale`=0.718. Una mayor centralidad indica que el metodo mira una region fisicamente plausible, aunque no garantiza fidelidad causal.
+
+**Conclusion.** La centralidad ayuda a filtrar mapas visualmente atractivos pero poco fisicos. En general, Integrated Gradients, Occlusion o variantes multiescala se comportan mejor que Grad-CAM clasico para localizar el transito.
+
+### Kepler - Analisis contrafactual del efecto en probabilidad
+
+Archivo ES: [`espanol/material_suplementario/kepler_analisis_contrafactual_efecto_probabilidad.png`](espanol/material_suplementario/kepler_analisis_contrafactual_efecto_probabilidad.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_counterfactual_probability_effect_analysis.png`](english/supplementary_figures/kepler_counterfactual_probability_effect_analysis.png)
+
+**Analisis.** La figura modifica la region central del transito: la aplana, la profundiza o reduce su profundidad. Para Kepler, mayor caída media: `erase_both_transits` (-0.328); mayor tasa de cambio de predicción: `erase_both_transits` (50.0%). Esto evalua si el modelo responde de forma coherente ante cambios fisicamente relacionados con el transito.
+
+**Conclusion.** Los contrafactuales son una explicacion operacional: no solo dicen donde mira el modelo, sino que miden que pasa si se altera esa zona. Si aplanar el transito cambia fuertemente la probabilidad, hay evidencia de dependencia morfologica real.
+
+### Kepler - AUC de deteccion de errores usando metricas XAI
+
+Archivo ES: [`espanol/material_suplementario/kepler_auc_deteccion_errores_metricas_xai.png`](espanol/material_suplementario/kepler_auc_deteccion_errores_metricas_xai.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_error_detection_auc_from_xai_metrics.png`](english/supplementary_figures/kepler_error_detection_auc_from_xai_metrics.png)
+
+**Analisis.** Esta figura evalua si metricas XAI/incertidumbre separan errores (FP/FN) de aciertos (TP/TN). Las mejores senales en Kepler son: `aleatoric_uncertainty` AUC=0.913 (high=risk), `target_confidence` AUC=0.913 (low=risk), `maxlike_entropy` AUC=0.913 (high=risk).
+
+**Conclusion.** Esta es una figura clave para trabajo futuro: las explicaciones pueden mejorar el sistema no cambiando directamente la prediccion, sino detectando cuando una prediccion debe revisarse o tener umbral distinto.
+
+### Kepler - Faithfulness Correlation por metodo XAI
+
+Archivo ES: [`espanol/material_suplementario/kepler_correlacion_fidelidad_por_metodo_xai.png`](espanol/material_suplementario/kepler_correlacion_fidelidad_por_metodo_xai.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_faithfulness_correlation_by_xai_method.png`](english/supplementary_figures/kepler_faithfulness_correlation_by_xai_method.png)
+
+**Analisis.** Esta figura reporta la correlacion entre importancia atribuida a puntos perturbados y cambio de confianza. En Kepler, el mejor metodo es `integrated_gradients` con Pearson=0.212 y Spearman=0.246.
+
+**Conclusion.** Valores positivos indican que el mapa tiene relacion con la sensibilidad real del modelo. No prueba causalidad perfecta, pero permite defender cuantitativamente que algunas explicaciones son mas fieles que otras.
+
+### Kepler - Fidelidad por AUC de borrado
+
+Archivo ES: [`espanol/material_suplementario/kepler_fidelidad_auc_borrado_por_metodo_xai.png`](espanol/material_suplementario/kepler_fidelidad_auc_borrado_por_metodo_xai.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_faithfulness_deletion_auc_by_xai_method.png`](english/supplementary_figures/kepler_faithfulness_deletion_auc_by_xai_method.png)
+
+**Analisis.** La metrica mide cuanto cae la confianza al borrar los puntos que un metodo considera importantes. En Kepler, el mejor metodo es `consensus` con AUC=0.459, caida al 10%=0.551 y caida maxima media=0.617.
+
+**Conclusion.** Es una de las metricas de fidelidad mas defendibles del paquete. Un AUC mayor significa que el mapa identifica puntos que efectivamente sostienen la decision del modelo.
+
+### Kepler - Curvas de fidelidad por borrado
+
+Archivo ES: [`espanol/material_suplementario/kepler_curvas_fidelidad_por_borrado.png`](espanol/material_suplementario/kepler_curvas_fidelidad_por_borrado.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_faithfulness_deletion_curves.png`](english/supplementary_figures/kepler_faithfulness_deletion_curves.png)
+
+**Analisis.** La curva muestra la caida de confianza al borrar progresivamente 5%, 10%, 20%, 30% y 50% de puntos relevantes. En Kepler, la lectura cuantitativa es coherente con la tabla de AUC: `consensus` queda como metodo mas fuerte.
+
+**Conclusion.** La figura permite ver no solo el ranking final, sino la forma de la degradacion. Si una curva cae rapido al inicio, el metodo concentra bien la evidencia critica.
+
+### Kepler - Comparacion MaxLike vs MC Dropout
+
+Archivo ES: [`espanol/material_suplementario/kepler_comparacion_maxlike_mc_dropout.png`](espanol/material_suplementario/kepler_comparacion_maxlike_mc_dropout.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_maxlike_vs_mc_dropout_probability_comparison.png`](english/supplementary_figures/kepler_maxlike_vs_mc_dropout_probability_comparison.png)
+
+**Analisis.** La figura compara la probabilidad deterministica MaxLike con la media de MC Dropout. Para Kepler, la confianza media MaxLike es 0.962, la entropia media es 0.095 y la desviacion MC media es 0.0041.
+
+**Conclusion.** MC Dropout no altera drasticamente la mayoria de predicciones; funciona mejor como senal de riesgo que como reemplazo de la inferencia deterministica.
+
+### Kepler - Dispersion probabilidad-incertidumbre MC Dropout
+
+Archivo ES: [`espanol/material_suplementario/kepler_dispersion_probabilidad_incertidumbre_mc_dropout.png`](espanol/material_suplementario/kepler_dispersion_probabilidad_incertidumbre_mc_dropout.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_mc_dropout_probability_uncertainty_scatter.png`](english/supplementary_figures/kepler_mc_dropout_probability_uncertainty_scatter.png)
+
+**Analisis.** El scatter permite ubicar errores y aciertos segun probabilidad e incertidumbre. En Kepler, los errores tienen MC std media mayor que los aciertos: FP=0.018, FN=0.025, frente a TN=0.002 y TP=0.010.
+
+**Conclusion.** La incertidumbre ayuda a detectar casos dificiles, especialmente cerca del umbral o en falsos negativos. No todos los errores son inciertos, pero la tendencia es util para alertas.
+
+### Kepler - Incertidumbre MC Dropout en ejemplos seleccionados
+
+Archivo ES: [`espanol/material_suplementario/kepler_incertidumbre_mc_dropout_ejemplos_seleccionados.png`](espanol/material_suplementario/kepler_incertidumbre_mc_dropout_ejemplos_seleccionados.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_mc_dropout_uncertainty_selected_examples.png`](english/supplementary_figures/kepler_mc_dropout_uncertainty_selected_examples.png)
+
+**Analisis.** Resume media, percentiles y desviacion de MC Dropout en casos representativos. El mayor MC std seleccionado en Kepler es idx=1053 con MC std=0.070, p=0.604 y caso `mayor_incertidumbre_mc_dropout`.
+
+**Conclusion.** Es una figura adecuada para explicar incertidumbre de forma visual y asociarla con ejemplos concretos. Sirve para mostrar por que algunos casos deben revisarse manualmente.
+
+### Kepler - Diagrama de confiabilidad y calibracion
+
+Archivo ES: [`espanol/material_suplementario/kepler_diagrama_confiabilidad_calibracion_probabilistica.png`](espanol/material_suplementario/kepler_diagrama_confiabilidad_calibracion_probabilistica.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_probability_calibration_reliability_diagram.png`](english/supplementary_figures/kepler_probability_calibration_reliability_diagram.png)
+
+**Analisis.** Evalua si las probabilidades predichas son calibradas. Para Kepler: ECE raw=0.011, ECE temp=0.021, Brier raw=0.028, Brier temp=0.029, NLL raw=0.103, NLL temp=0.105.
+
+**Conclusion.** La calibracion post-hoc no siempre mejora todas las metricas. En este caso debe reportarse como auditoria probabilistica, no como mejora principal del modelo.
+
+### Kepler - Matriz de confusion normalizada con resumen de atencion XAI (suplementaria)
+
+Archivo ES: [`espanol/material_suplementario/kepler_matriz_confusion_normalizada_resumen_atencion_xai.png`](espanol/material_suplementario/kepler_matriz_confusion_normalizada_resumen_atencion_xai.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_row_normalized_confusion_matrix_xai_attention_summary.png`](english/supplementary_figures/kepler_row_normalized_confusion_matrix_xai_attention_summary.png)
+
+**Analisis.** Es la version suplementaria de la matriz principal. Mantiene tasas normalizadas y estadisticos XAI: focos, dispersion, centralidad e incertidumbre media por celda. En Kepler, TP=95.3% y FN=4.7%.
+
+**Conclusion.** Debe usarse como respaldo si en el cuerpo del paper se prefiere una version mas limpia. Es util para mostrar detalles numericos sin saturar la figura principal.
+
+### Kepler - Descomposicion de incertidumbre por resultado
+
+Archivo ES: [`espanol/material_suplementario/kepler_descomposicion_incertidumbre_por_resultado.png`](espanol/material_suplementario/kepler_descomposicion_incertidumbre_por_resultado.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_uncertainty_decomposition_by_prediction_outcome.png`](english/supplementary_figures/kepler_uncertainty_decomposition_by_prediction_outcome.png)
+
+**Analisis.** Descompone incertidumbre predictiva en componente aleatorica y epistemica. En Kepler, FN tiene entropia predictiva media 0.487 y FP 0.442, mucho mayor que TN=0.036.
+
+**Conclusion.** Los errores tienden a ser mas ambiguos, pero la incertidumbre epistemica es baja en promedio. Esto sugiere que Deep Ensembles podrian ser una extension mas fuerte que MC Dropout.
+
+### Kepler - Resumen de incertidumbre por resultado
+
+Archivo ES: [`espanol/material_suplementario/kepler_resumen_incertidumbre_por_resultado.png`](espanol/material_suplementario/kepler_resumen_incertidumbre_por_resultado.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_uncertainty_summary_by_prediction_outcome.png`](english/supplementary_figures/kepler_uncertainty_summary_by_prediction_outcome.png)
+
+**Analisis.** Muestra confianza objetivo e incertidumbre media por outcome. En Kepler, la confianza objetivo media es TN=0.986, TP=0.906, FP=0.792 y FN=0.736.
+
+**Conclusion.** La menor confianza media en errores, especialmente FN, respalda usar incertidumbre como filtro de revision.
+
+### Kepler - Scores de calidad y riesgo de atencion XAI
+
+Archivo ES: [`espanol/material_suplementario/kepler_scores_calidad_riesgo_atencion_xai.png`](espanol/material_suplementario/kepler_scores_calidad_riesgo_atencion_xai.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_xai_attention_quality_and_risk_scores.png`](english/supplementary_figures/kepler_xai_attention_quality_and_risk_scores.png)
+
+**Analisis.** Compara `attention_quality_score` y `attention_risk_score`. En Kepler, el riesgo medio es TP=0.348, TN=0.371, FP=0.403 y FN=0.402.
+
+**Conclusion.** La metrica de riesgo XAI es util como feature de meta-clasificacion o alerta, pero debe combinarse con entropia e incertidumbre para separar errores de forma robusta.
+
+### Kepler - Mapa XAI individual: verdadero positivo de alta confianza
+
+Archivo ES: [`espanol/material_suplementario/kepler_mapa_xai_verdadero_positivo_alta_confianza_idx1132.png`](espanol/material_suplementario/kepler_mapa_xai_verdadero_positivo_alta_confianza_idx1132.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_xai_explanation_map_high_confidence_true_positive_idx1132.png`](english/supplementary_figures/kepler_xai_explanation_map_high_confidence_true_positive_idx1132.png)
+
+**Analisis.** idx=1132, etiqueta=PC, y=1, pred=1 (TP), p=0.997, confianza objetivo=0.997, MC std=4.88e-04. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Sirve como ejemplo ideal: la prediccion es correcta y muy confiable, por lo que se espera que los mapas se concentren en evidencia morfologica clara.
+
+### Kepler - Mapa XAI individual: verdadero negativo de alta confianza
+
+Archivo ES: [`espanol/material_suplementario/kepler_mapa_xai_verdadero_negativo_alta_confianza_idx1365.png`](espanol/material_suplementario/kepler_mapa_xai_verdadero_negativo_alta_confianza_idx1365.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_xai_explanation_map_high_confidence_true_negative_idx1365.png`](english/supplementary_figures/kepler_xai_explanation_map_high_confidence_true_negative_idx1365.png)
+
+**Analisis.** idx=1365, etiqueta=no-PC, y=0, pred=0 (TN), p=2.10e-19, confianza objetivo=1.000, MC std=1.06e-17. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Sirve como control negativo: la red asigna probabilidad positiva casi nula y la explicacion muestra evidencia contra la clase positiva o ausencia de transito compatible.
+
+### Kepler - Mapa XAI individual: ejemplo cercano al umbral de decisión
+
+Archivo ES: [`espanol/material_suplementario/kepler_mapa_xai_ejemplo_cerca_umbral_decision_idx275.png`](espanol/material_suplementario/kepler_mapa_xai_ejemplo_cerca_umbral_decision_idx275.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_xai_explanation_map_near_decision_threshold_idx275.png`](english/supplementary_figures/kepler_xai_explanation_map_near_decision_threshold_idx275.png)
+
+**Analisis.** idx=275, etiqueta=PC, y=1, pred=0 (FN), p=0.493, confianza objetivo=0.507, MC std=0.044. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Es clave para discutir incertidumbre operacional: pequenos cambios de umbral, calibracion o preprocesamiento podrian cambiar la decision.
+
+### Kepler - Mapa XAI individual: falso positivo
+
+Archivo ES: [`espanol/material_suplementario/kepler_mapa_xai_falso_positivo_idx677.png`](espanol/material_suplementario/kepler_mapa_xai_falso_positivo_idx677.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_xai_explanation_map_false_positive_idx677.png`](english/supplementary_figures/kepler_xai_explanation_map_false_positive_idx677.png)
+
+**Analisis.** idx=677, etiqueta=no-PC, y=0, pred=1 (FP), p=0.993, confianza objetivo=0.993, MC std=0.001. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Es importante para diagnosticar confusiones: la red ve una morfologia que parece positiva aunque la etiqueta real sea negativa.
+
+### Kepler - Mapa XAI individual: falso negativo
+
+Archivo ES: [`espanol/material_suplementario/kepler_mapa_xai_falso_negativo_idx1343.png`](espanol/material_suplementario/kepler_mapa_xai_falso_negativo_idx1343.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_xai_explanation_map_false_negative_idx1343.png`](english/supplementary_figures/kepler_xai_explanation_map_false_negative_idx1343.png)
+
+**Analisis.** idx=1343, etiqueta=PC, y=1, pred=0 (FN), p=0.002, confianza objetivo=0.998, MC std=3.99e-04. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Es importante para revisar fallas del modelo: la senal real positiva no fue reconocida o quedo degradada por ruido/preprocesamiento.
+
+### Kepler - Mapa XAI individual: ejemplo con mayor incertidumbre MC Dropout
+
+Archivo ES: [`espanol/material_suplementario/kepler_mapa_xai_mayor_incertidumbre_mc_dropout_idx1053.png`](espanol/material_suplementario/kepler_mapa_xai_mayor_incertidumbre_mc_dropout_idx1053.png)
+
+Archivo EN: [`english/supplementary_figures/kepler_xai_explanation_map_highest_mc_dropout_uncertainty_idx1053.png`](english/supplementary_figures/kepler_xai_explanation_map_highest_mc_dropout_uncertainty_idx1053.png)
+
+**Analisis.** idx=1053, etiqueta=PC, y=1, pred=1 (TP), p=0.604, confianza objetivo=0.604, MC std=0.070. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Es el mejor ejemplo para justificar revision humana o decision asistida por incertidumbre.
+
+## 2.2. TESS: material suplementario
+
+### TESS - Importancia agregada en ejemplos seleccionados
+
+Archivo ES: [`espanol/material_suplementario/tess_importancia_agregada_ejemplos_seleccionados.png`](espanol/material_suplementario/tess_importancia_agregada_ejemplos_seleccionados.png)
+
+Archivo EN: [`english/supplementary_figures/tess_aggregate_importance_selected_examples.png`](english/supplementary_figures/tess_aggregate_importance_selected_examples.png)
+
+**Analisis.** Esta figura promedia mapas de importancia en casos representativos. Sirve para comparar Saliency, SmoothGrad, Integrated Gradients, Grad-CAM, Grad-CAM multiescala, Occlusion y Consenso. En TESS, la centralidad por metodo se resume como global: `integrated_gradients`=0.597; local: `integrated_gradients`=0.609.
+
+**Conclusion.** La figura muestra que los metodos basados en entrada/intervencion tienden a ser mas interpretables que Grad-CAM clasico cuando hay pooling temporal. Es evidencia visual para justificar usar Occlusion, Integrated Gradients y Consenso como explicaciones principales.
+
+### TESS - Boxplot de focos de atencion y dispersion
+
+Archivo ES: [`espanol/material_suplementario/tess_boxplot_focos_atencion_dispersion_por_resultado.png`](espanol/material_suplementario/tess_boxplot_focos_atencion_dispersion_por_resultado.png)
+
+Archivo EN: [`english/supplementary_figures/tess_attention_focus_dispersion_boxplot_by_outcome.png`](english/supplementary_figures/tess_attention_focus_dispersion_boxplot_by_outcome.png)
+
+**Analisis.** Este boxplot complementa los violin plots principales. Muestra que las distribuciones por outcome tienen solapamiento considerable: por ejemplo, foco medio TP=8.55, FP=7.75, FN=8.15 y TN=8.18.
+
+**Conclusion.** La cantidad de focos no es un clasificador de errores por si sola. Su utilidad aparece al combinarla con dispersion, centralidad, confianza y MC Dropout.
+
+### TESS - Centralidad de importancia por metodo XAI
+
+Archivo ES: [`espanol/material_suplementario/tess_centralidad_importancia_por_metodo_xai.png`](espanol/material_suplementario/tess_centralidad_importancia_por_metodo_xai.png)
+
+Archivo EN: [`english/supplementary_figures/tess_central_importance_ratio_by_xai_method.png`](english/supplementary_figures/tess_central_importance_ratio_by_xai_method.png)
+
+**Analisis.** La figura compara la fraccion de importancia dentro de la ventana central del transito. Resultado resumido: global: `integrated_gradients`=0.597; local: `integrated_gradients`=0.609. Una mayor centralidad indica que el metodo mira una region fisicamente plausible, aunque no garantiza fidelidad causal.
+
+**Conclusion.** La centralidad ayuda a filtrar mapas visualmente atractivos pero poco fisicos. En general, Integrated Gradients, Occlusion o variantes multiescala se comportan mejor que Grad-CAM clasico para localizar el transito.
+
+### TESS - Analisis contrafactual del efecto en probabilidad
+
+Archivo ES: [`espanol/material_suplementario/tess_analisis_contrafactual_efecto_probabilidad.png`](espanol/material_suplementario/tess_analisis_contrafactual_efecto_probabilidad.png)
+
+Archivo EN: [`english/supplementary_figures/tess_counterfactual_probability_effect_analysis.png`](english/supplementary_figures/tess_counterfactual_probability_effect_analysis.png)
+
+**Analisis.** La figura modifica la region central del transito: la aplana, la profundiza o reduce su profundidad. Para TESS, mayor caída media: `erase_both_transits` (-0.110); mayor tasa de cambio de predicción: `erase_both_transits` (33.3%). Esto evalua si el modelo responde de forma coherente ante cambios fisicamente relacionados con el transito.
+
+**Conclusion.** Los contrafactuales son una explicacion operacional: no solo dicen donde mira el modelo, sino que miden que pasa si se altera esa zona. Si aplanar el transito cambia fuertemente la probabilidad, hay evidencia de dependencia morfologica real.
+
+### TESS - AUC de deteccion de errores usando metricas XAI
+
+Archivo ES: [`espanol/material_suplementario/tess_auc_deteccion_errores_metricas_xai.png`](espanol/material_suplementario/tess_auc_deteccion_errores_metricas_xai.png)
+
+Archivo EN: [`english/supplementary_figures/tess_error_detection_auc_from_xai_metrics.png`](english/supplementary_figures/tess_error_detection_auc_from_xai_metrics.png)
+
+**Analisis.** Esta figura evalua si metricas XAI/incertidumbre separan errores (FP/FN) de aciertos (TP/TN). Las mejores senales en TESS son: `target_confidence` AUC=0.929 (low=risk), `aleatoric_uncertainty` AUC=0.928 (high=risk), `maxlike_entropy` AUC=0.928 (high=risk).
+
+**Conclusion.** Esta es una figura clave para trabajo futuro: las explicaciones pueden mejorar el sistema no cambiando directamente la prediccion, sino detectando cuando una prediccion debe revisarse o tener umbral distinto.
+
+### TESS - Faithfulness Correlation por metodo XAI
+
+Archivo ES: [`espanol/material_suplementario/tess_correlacion_fidelidad_por_metodo_xai.png`](espanol/material_suplementario/tess_correlacion_fidelidad_por_metodo_xai.png)
+
+Archivo EN: [`english/supplementary_figures/tess_faithfulness_correlation_by_xai_method.png`](english/supplementary_figures/tess_faithfulness_correlation_by_xai_method.png)
+
+**Analisis.** Esta figura reporta la correlacion entre importancia atribuida a puntos perturbados y cambio de confianza. En TESS, el mejor metodo es `occlusion` con Pearson=0.496 y Spearman=0.514.
+
+**Conclusion.** Valores positivos indican que el mapa tiene relacion con la sensibilidad real del modelo. No prueba causalidad perfecta, pero permite defender cuantitativamente que algunas explicaciones son mas fieles que otras.
+
+### TESS - Fidelidad por AUC de borrado
+
+Archivo ES: [`espanol/material_suplementario/tess_fidelidad_auc_borrado_por_metodo_xai.png`](espanol/material_suplementario/tess_fidelidad_auc_borrado_por_metodo_xai.png)
+
+Archivo EN: [`english/supplementary_figures/tess_faithfulness_deletion_auc_by_xai_method.png`](english/supplementary_figures/tess_faithfulness_deletion_auc_by_xai_method.png)
+
+**Analisis.** La metrica mide cuanto cae la confianza al borrar los puntos que un metodo considera importantes. En TESS, el mejor metodo es `occlusion` con AUC=0.386, caida al 10%=0.435 y caida maxima media=0.502.
+
+**Conclusion.** Es una de las metricas de fidelidad mas defendibles del paquete. Un AUC mayor significa que el mapa identifica puntos que efectivamente sostienen la decision del modelo.
+
+### TESS - Curvas de fidelidad por borrado
+
+Archivo ES: [`espanol/material_suplementario/tess_curvas_fidelidad_por_borrado.png`](espanol/material_suplementario/tess_curvas_fidelidad_por_borrado.png)
+
+Archivo EN: [`english/supplementary_figures/tess_faithfulness_deletion_curves.png`](english/supplementary_figures/tess_faithfulness_deletion_curves.png)
+
+**Analisis.** La curva muestra la caida de confianza al borrar progresivamente 5%, 10%, 20%, 30% y 50% de puntos relevantes. En TESS, la lectura cuantitativa es coherente con la tabla de AUC: `occlusion` queda como metodo mas fuerte.
+
+**Conclusion.** La figura permite ver no solo el ranking final, sino la forma de la degradacion. Si una curva cae rapido al inicio, el metodo concentra bien la evidencia critica.
+
+### TESS - Comparacion MaxLike vs MC Dropout
+
+Archivo ES: [`espanol/material_suplementario/tess_comparacion_maxlike_mc_dropout.png`](espanol/material_suplementario/tess_comparacion_maxlike_mc_dropout.png)
+
+Archivo EN: [`english/supplementary_figures/tess_maxlike_vs_mc_dropout_probability_comparison.png`](english/supplementary_figures/tess_maxlike_vs_mc_dropout_probability_comparison.png)
+
+**Analisis.** La figura compara la probabilidad deterministica MaxLike con la media de MC Dropout. Para TESS, la confianza media MaxLike es 0.966, la entropia media es 0.075 y la desviacion MC media es 0.0034.
+
+**Conclusion.** MC Dropout no altera drasticamente la mayoria de predicciones; funciona mejor como senal de riesgo que como reemplazo de la inferencia deterministica.
+
+### TESS - Dispersion probabilidad-incertidumbre MC Dropout
+
+Archivo ES: [`espanol/material_suplementario/tess_dispersion_probabilidad_incertidumbre_mc_dropout.png`](espanol/material_suplementario/tess_dispersion_probabilidad_incertidumbre_mc_dropout.png)
+
+Archivo EN: [`english/supplementary_figures/tess_mc_dropout_probability_uncertainty_scatter.png`](english/supplementary_figures/tess_mc_dropout_probability_uncertainty_scatter.png)
+
+**Analisis.** El scatter permite ubicar errores y aciertos segun probabilidad e incertidumbre. En TESS, los errores tienen MC std media mayor que los aciertos: FP=0.013, FN=0.024, frente a TN=0.003 y TP=0.003.
+
+**Conclusion.** La incertidumbre ayuda a detectar casos dificiles, especialmente cerca del umbral o en falsos negativos. No todos los errores son inciertos, pero la tendencia es util para alertas.
+
+### TESS - Incertidumbre MC Dropout en ejemplos seleccionados
+
+Archivo ES: [`espanol/material_suplementario/tess_incertidumbre_mc_dropout_ejemplos_seleccionados.png`](espanol/material_suplementario/tess_incertidumbre_mc_dropout_ejemplos_seleccionados.png)
+
+Archivo EN: [`english/supplementary_figures/tess_mc_dropout_uncertainty_selected_examples.png`](english/supplementary_figures/tess_mc_dropout_uncertainty_selected_examples.png)
+
+**Analisis.** Resume media, percentiles y desviacion de MC Dropout en casos representativos. El mayor MC std seleccionado en TESS es idx=1255 con MC std=0.064, p=0.467 y caso `mayor_incertidumbre_mc_dropout`.
+
+**Conclusion.** Es una figura adecuada para explicar incertidumbre de forma visual y asociarla con ejemplos concretos. Sirve para mostrar por que algunos casos deben revisarse manualmente.
+
+### TESS - Diagrama de confiabilidad y calibracion
+
+Archivo ES: [`espanol/material_suplementario/tess_diagrama_confiabilidad_calibracion_probabilistica.png`](espanol/material_suplementario/tess_diagrama_confiabilidad_calibracion_probabilistica.png)
+
+Archivo EN: [`english/supplementary_figures/tess_probability_calibration_reliability_diagram.png`](english/supplementary_figures/tess_probability_calibration_reliability_diagram.png)
+
+**Analisis.** Evalua si las probabilidades predichas son calibradas. Para TESS: ECE raw=0.028, ECE temp=0.031, Brier raw=0.028, Brier temp=0.028, NLL raw=0.094, NLL temp=0.094.
+
+**Conclusion.** La calibracion post-hoc no siempre mejora todas las metricas. En este caso debe reportarse como auditoria probabilistica, no como mejora principal del modelo.
+
+### TESS - Matriz de confusion normalizada con resumen de atencion XAI (suplementaria)
+
+Archivo ES: [`espanol/material_suplementario/tess_matriz_confusion_normalizada_resumen_atencion_xai.png`](espanol/material_suplementario/tess_matriz_confusion_normalizada_resumen_atencion_xai.png)
+
+Archivo EN: [`english/supplementary_figures/tess_row_normalized_confusion_matrix_xai_attention_summary.png`](english/supplementary_figures/tess_row_normalized_confusion_matrix_xai_attention_summary.png)
+
+**Analisis.** Es la version suplementaria de la matriz principal. Mantiene tasas normalizadas y estadisticos XAI: focos, dispersion, centralidad e incertidumbre media por celda. En TESS, TP=92.8% y FN=7.2%.
+
+**Conclusion.** Debe usarse como respaldo si en el cuerpo del paper se prefiere una version mas limpia. Es util para mostrar detalles numericos sin saturar la figura principal.
+
+### TESS - Descomposicion de incertidumbre por resultado
+
+Archivo ES: [`espanol/material_suplementario/tess_descomposicion_incertidumbre_por_resultado.png`](espanol/material_suplementario/tess_descomposicion_incertidumbre_por_resultado.png)
+
+Archivo EN: [`english/supplementary_figures/tess_uncertainty_decomposition_by_prediction_outcome.png`](english/supplementary_figures/tess_uncertainty_decomposition_by_prediction_outcome.png)
+
+**Analisis.** Descompone incertidumbre predictiva en componente aleatorica y epistemica. En TESS, FN tiene entropia predictiva media 0.544 y FP 0.326, mucho mayor que TN=0.063.
+
+**Conclusion.** Los errores tienden a ser mas ambiguos, pero la incertidumbre epistemica es baja en promedio. Esto sugiere que Deep Ensembles podrian ser una extension mas fuerte que MC Dropout.
+
+### TESS - Resumen de incertidumbre por resultado
+
+Archivo ES: [`espanol/material_suplementario/tess_resumen_incertidumbre_por_resultado.png`](espanol/material_suplementario/tess_resumen_incertidumbre_por_resultado.png)
+
+Archivo EN: [`english/supplementary_figures/tess_uncertainty_summary_by_prediction_outcome.png`](english/supplementary_figures/tess_uncertainty_summary_by_prediction_outcome.png)
+
+**Analisis.** Muestra confianza objetivo e incertidumbre media por outcome. En TESS, la confianza objetivo media es TN=0.970, TP=0.977, FP=0.889 y FN=0.614.
+
+**Conclusion.** La menor confianza media en errores, especialmente FN, respalda usar incertidumbre como filtro de revision.
+
+### TESS - Scores de calidad y riesgo de atencion XAI
+
+Archivo ES: [`espanol/material_suplementario/tess_scores_calidad_riesgo_atencion_xai.png`](espanol/material_suplementario/tess_scores_calidad_riesgo_atencion_xai.png)
+
+Archivo EN: [`english/supplementary_figures/tess_xai_attention_quality_and_risk_scores.png`](english/supplementary_figures/tess_xai_attention_quality_and_risk_scores.png)
+
+**Analisis.** Compara `attention_quality_score` y `attention_risk_score`. En TESS, el riesgo medio es TP=0.332, TN=0.414, FP=0.355 y FN=0.447.
+
+**Conclusion.** La metrica de riesgo XAI es util como feature de meta-clasificacion o alerta, pero debe combinarse con entropia e incertidumbre para separar errores de forma robusta.
+
+### TESS - Mapa XAI individual: verdadero positivo de alta confianza
+
+Archivo ES: [`espanol/material_suplementario/tess_mapa_xai_verdadero_positivo_alta_confianza_idx693.png`](espanol/material_suplementario/tess_mapa_xai_verdadero_positivo_alta_confianza_idx693.png)
+
+Archivo EN: [`english/supplementary_figures/tess_xai_explanation_map_high_confidence_true_positive_idx693.png`](english/supplementary_figures/tess_xai_explanation_map_high_confidence_true_positive_idx693.png)
+
+**Analisis.** idx=693, etiqueta=EB, y=1, pred=1 (TP), p=1.000, confianza objetivo=1.000, MC std=1.08e-04. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Sirve como ejemplo ideal: la prediccion es correcta y muy confiable, por lo que se espera que los mapas se concentren en evidencia morfologica clara.
+
+### TESS - Mapa XAI individual: verdadero negativo de alta confianza
+
+Archivo ES: [`espanol/material_suplementario/tess_mapa_xai_verdadero_negativo_alta_confianza_idx802.png`](espanol/material_suplementario/tess_mapa_xai_verdadero_negativo_alta_confianza_idx802.png)
+
+Archivo EN: [`english/supplementary_figures/tess_xai_explanation_map_high_confidence_true_negative_idx802.png`](english/supplementary_figures/tess_xai_explanation_map_high_confidence_true_negative_idx802.png)
+
+**Analisis.** idx=802, etiqueta=J, y=0, pred=0 (TN), p=1.08e-07, confianza objetivo=1.000, MC std=1.03e-07. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Sirve como control negativo: la red asigna probabilidad positiva casi nula y la explicacion muestra evidencia contra la clase positiva o ausencia de transito compatible.
+
+### TESS - Mapa XAI individual: ejemplo cercano al umbral de decisión
+
+Archivo ES: [`espanol/material_suplementario/tess_mapa_xai_ejemplo_cerca_umbral_decision_idx1007.png`](espanol/material_suplementario/tess_mapa_xai_ejemplo_cerca_umbral_decision_idx1007.png)
+
+Archivo EN: [`english/supplementary_figures/tess_xai_explanation_map_near_decision_threshold_idx1007.png`](english/supplementary_figures/tess_xai_explanation_map_near_decision_threshold_idx1007.png)
+
+**Analisis.** idx=1007, etiqueta=J, y=0, pred=0 (TN), p=0.748, confianza objetivo=0.252, MC std=0.016. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Es clave para discutir incertidumbre operacional: pequenos cambios de umbral, calibracion o preprocesamiento podrian cambiar la decision.
+
+### TESS - Mapa XAI individual: falso positivo
+
+Archivo ES: [`espanol/material_suplementario/tess_mapa_xai_falso_positivo_idx700.png`](espanol/material_suplementario/tess_mapa_xai_falso_positivo_idx700.png)
+
+Archivo EN: [`english/supplementary_figures/tess_xai_explanation_map_false_positive_idx700.png`](english/supplementary_figures/tess_xai_explanation_map_false_positive_idx700.png)
+
+**Analisis.** idx=700, etiqueta=J, y=0, pred=1 (FP), p=0.981, confianza objetivo=0.981, MC std=0.004. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Es importante para diagnosticar confusiones: la red ve una morfologia que parece positiva aunque la etiqueta real sea negativa.
+
+### TESS - Mapa XAI individual: falso negativo
+
+Archivo ES: [`espanol/material_suplementario/tess_mapa_xai_falso_negativo_idx495.png`](espanol/material_suplementario/tess_mapa_xai_falso_negativo_idx495.png)
+
+Archivo EN: [`english/supplementary_figures/tess_xai_explanation_map_false_negative_idx495.png`](english/supplementary_figures/tess_xai_explanation_map_false_negative_idx495.png)
+
+**Analisis.** idx=495, etiqueta=EB, y=1, pred=0 (FN), p=2.97e-04, confianza objetivo=1.000, MC std=1.18e-04. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Es importante para revisar fallas del modelo: la senal real positiva no fue reconocida o quedo degradada por ruido/preprocesamiento.
+
+### TESS - Mapa XAI individual: ejemplo con mayor incertidumbre MC Dropout
+
+Archivo ES: [`espanol/material_suplementario/tess_mapa_xai_mayor_incertidumbre_mc_dropout_idx1255.png`](espanol/material_suplementario/tess_mapa_xai_mayor_incertidumbre_mc_dropout_idx1255.png)
+
+Archivo EN: [`english/supplementary_figures/tess_xai_explanation_map_highest_mc_dropout_uncertainty_idx1255.png`](english/supplementary_figures/tess_xai_explanation_map_highest_mc_dropout_uncertainty_idx1255.png)
+
+**Analisis.** idx=1255, etiqueta=J, y=0, pred=0 (TN), p=0.467, confianza objetivo=0.533, MC std=0.064. La figura compara mapas de importancia por metodo y permite ver si la evidencia se concentra cerca del transito o se dispersa en regiones no esperadas.
+
+**Conclusion.** Es el mejor ejemplo para justificar revision humana o decision asistida por incertidumbre.
+
+---
+
+## Cierre metodologico
+
+El conjunto completo de figuras muestra que XAI aporta tres niveles de informacion: localizacion visual de evidencia, metricas cuantitativas de fidelidad y senales de riesgo/incertidumbre. La conclusion mas defendible es que las explicaciones no deben usarse como verdad absoluta, pero si como herramientas para auditoria de datos, deteccion de predicciones poco confiables, seleccion de casos dificiles y future work orientado a mejorar el preprocesamiento o entrenar detectores auxiliares de error.

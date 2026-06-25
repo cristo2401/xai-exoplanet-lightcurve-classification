@@ -1,0 +1,11 @@
+{
+  "kepler": {
+    "model": "/home/cristobal/Documentos/USM/semestre 11/XAI/proyecto/mejores_resultados/modelos/kepler_mejor_modelo.pth",
+    "metrics": "/home/cristobal/Documentos/USM/semestre 11/XAI/proyecto/mejores_resultados/metricas/kepler_mejor_metrics.json"
+  },
+  "tess": {
+    "model": "/home/cristobal/Documentos/USM/semestre 11/XAI/proyecto/mejores_resultados/modelos/tess_mejor_modelo.pth",
+    "metrics": "/home/cristobal/Documentos/USM/semestre 11/XAI/proyecto/mejores_resultados/metricas/tess_mejor_metrics.json"
+  },
+  "comparison_csv": "/home/cristobal/Documentos/USM/semestre 11/XAI/proyecto/mejores_resultados/mejores_vs_paper.csv"
+}

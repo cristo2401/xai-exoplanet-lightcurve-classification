@@ -1,0 +1,91 @@
+# Conclusión final del análisis XAI
+
+Esta sección resume y discute los resultados obtenidos mediante los métodos de explicabilidad aplicados a los modelos campeones de Kepler y TESS. El objetivo no fue volver a entrenar los modelos, sino explicar predicciones reales del conjunto de test usando mapas de atribución, análisis de incertidumbre, contrafactuales y métricas de fidelidad. En Kepler se analizó la tarea `PC vs no-PC`; en TESS se mantuvo la formulación usada por el mejor modelo local, `PC+EB vs resto`, por lo que TESS debe interpretarse como un problema de triage de eventos tipo tránsito y no como una clasificación estricta de candidatos planetarios.
+
+## ¿Qué se logró explicar?
+
+Se logró explicar qué regiones temporales de las curvas de luz influyen en las decisiones del modelo, separando la contribución de la vista global y de la vista local. En los casos positivos correctamente clasificados, las explicaciones más consistentes tienden a concentrarse alrededor de la ventana central del tránsito. Esto es coherente con el problema físico: un candidato planetario o evento transit-like debería manifestarse como una caída de flujo localizada y relativamente simétrica en torno al centro de la curva fase-plegada.
+
+También se logró explicar parte de los errores. En falsos positivos, las explicaciones muestran que el modelo suele responder a estructuras centrales parecidas a un tránsito, aunque la etiqueta real sea negativa. Por lo tanto, en esos casos la explicación no necesariamente contradice al modelo; más bien muestra por qué el modelo se confundió. En falsos negativos, las explicaciones indican situaciones más difíciles: algunas muestras presentan atención dispersa, baja estabilidad, ruido o una morfología que el modelo no transforma en probabilidad positiva. Estos casos son particularmente útiles para auditoría, porque pueden revelar problemas de señal-ruido, centrado, normalización, definición de etiquetas o ambigüedad real del objeto.
+
+Las matrices de confusión normalizadas muestran que ambos modelos tienen buen desempeño. En Kepler, el modelo clasifica correctamente el 97.12% de los negativos y el 95.28% de los positivos. En TESS, clasifica correctamente el 97.97% de los negativos y el 92.83% de los positivos. Por lo tanto, el análisis XAI se está aplicando sobre modelos que efectivamente aprendieron patrones útiles, no sobre clasificadores débiles.
+
+## ¿Están ayudando a interpretar las explicaciones obtenidas?
+
+Sí, pero con matices. Las explicaciones ayudan a interpretar el comportamiento del modelo cuando se consideran como evidencia complementaria y no como verdad causal absoluta. Los mapas de Saliency, SmoothGrad, Integrated Gradients, Occlusion, Grad-CAM multiescala y mapas de consenso permiten observar si la decisión está apoyada en regiones compatibles con el tránsito central o si la importancia aparece dispersa en zonas menos esperables.
+
+Los métodos más interpretables en estos resultados fueron Occlusion, Integrated Gradients, Grad-CAM multiescala y Consensus. Occlusion es especialmente claro porque mide directamente cuánto cambia la salida al intervenir una región temporal. Si al borrar una ventana central cae la confianza del modelo, es razonable concluir que esa región era relevante para la predicción. Integrated Gradients también es útil porque distribuye la atribución considerando una trayectoria desde un baseline hasta la entrada real, reduciendo parte del ruido de un gradiente puntual.
+
+Grad-CAM 1D clásico resultó menos confiable como método principal. En varias figuras activa regiones laterales o incluso zonas opuestas a la morfología esperada del tránsito. Esto no invalida todo el análisis XAI, sino que muestra que Grad-CAM clásico no es necesariamente adecuado para esta arquitectura de dos ramas y señales temporales de distinta resolución. La baja resolución del último mapa convolucional, el pooling temporal, la interpolación al largo original y el uso de ReLU pueden desplazar o suavizar la explicación. Por eso, Grad-CAM clásico debe quedar como comparación metodológica o material suplementario, no como evidencia central.
+
+## ¿Por qué están ocurriendo esas explicaciones?
+
+Las explicaciones ocurren por la forma en que la arquitectura procesa las curvas de luz. El modelo combina una vista global, que entrega contexto de toda la curva fase-plegada, con una vista local, que enfatiza la zona cercana al tránsito. Las convoluciones 1D detectan patrones locales como pendientes, bordes, caídas de flujo, simetrías y recuperaciones posteriores al tránsito. Luego, las capas profundas combinan esas señales para decidir si la morfología se parece a un evento de interés.
+
+Cuando las explicaciones se concentran en el centro, la interpretación es consistente con el diseño del problema: el modelo está usando la región donde se espera el tránsito. Cuando aparecen focos dispersos, pueden ocurrir varias cosas. En negativos verdaderos, la dispersión puede ser esperable porque la evidencia de clase negativa muchas veces corresponde a la ausencia de un tránsito convincente, no a una única región puntual. En falsos positivos, una estructura central o secundaria puede imitar un tránsito y atraer la atención del modelo. En falsos negativos, la señal puede ser débil, ruidosa, estar mal centrada o no coincidir con la morfología dominante aprendida durante entrenamiento.
+
+El conteo de focos de atención permitió estudiar esta idea, pero no fue suficiente por sí solo para separar errores y aciertos. En Kepler, los errores tienen en promedio 5.62 focos y los aciertos 5.81; en TESS, los errores tienen 7.92 focos y los aciertos 8.24. La diferencia es pequeña. En cambio, la centralidad, la varianza posicional, el score de riesgo XAI y la incertidumbre resultaron más informativos. Esto sugiere que no basta preguntar cuántas zonas mira el modelo; también importa dónde están, cuán concentradas son y si la predicción es estable.
+
+## ¿Se podrán usar estas explicaciones para mejorar el desempeño del modelo de ML?
+
+Sí, pero de forma indirecta. Las explicaciones no deberían usarse como etiquetas verdaderas ni como prueba definitiva de causalidad física. Su uso más seguro es como herramienta de auditoría, control de calidad y selección de ejemplos difíciles.
+
+Una primera forma de mejora es usar XAI e incertidumbre para rechazo o priorización. Si una muestra tiene baja confianza, alta incertidumbre por MC Dropout, alta entropía, baja centralidad o un score de riesgo XAI elevado, se puede enviar a revisión manual en lugar de aceptar automáticamente la predicción. Esto no cambia el modelo base, pero mejora el sistema operacional porque reduce decisiones automáticas poco confiables.
+
+Una segunda forma es usar estas variables como entrada de un detector auxiliar de errores. Ese detector podría entrenarse con características como confianza, entropía, desviación estándar de MC Dropout, score de riesgo XAI, ratio de importancia central, varianza de posición de atención y cantidad de focos. Su objetivo no sería clasificar planetas directamente, sino estimar si la predicción del modelo principal es confiable.
+
+Una tercera forma es usar los resultados XAI para active learning y depuración de datos. Los falsos negativos con alta incertidumbre o atención extraña pueden revisarse, re-etiquetarse o usarse para aumentar el conjunto de entrenamiento. Los falsos positivos con atención central fuerte pueden revelar objetos morfológicamente confundentes que conviene modelar como subclase o tratar con preprocesamiento específico.
+
+Una cuarta posibilidad es incorporar regularización guiada por explicabilidad, por ejemplo penalizando explicaciones que ignoran la ventana central en positivos confiables. Esta opción debe aplicarse con cuidado, porque forzar siempre atención central podría empeorar casos reales con eventos desplazados, ruido instrumental o señales complementarias en la vista global.
+
+## Análisis de incertidumbre
+
+El análisis de incertidumbre fue uno de los resultados más sólidos. MaxLike, entropía predictiva, incertidumbre aleatoria y MC Dropout separaron bien errores de aciertos. En Kepler, la mejor señal para detectar errores obtuvo AUC=0.913, usando incertidumbre aleatoria. La confianza del modelo y la entropía MaxLike también alcanzaron AUC=0.913, y MC Dropout obtuvo AUC=0.908. En TESS, la confianza objetivo obtuvo AUC=0.929, la incertidumbre aleatoria AUC=0.928, la entropía MaxLike AUC=0.928 y MC Dropout AUC=0.924.
+
+Estos valores indican que las predicciones incorrectas tienden a ser menos confiables y más inciertas. Por ejemplo, en Kepler los falsos negativos tienen una desviación media de MC Dropout de 0.025, mientras que los verdaderos negativos tienen 0.0017. En TESS, los falsos negativos tienen MC std promedio de 0.0239, mientras que los verdaderos positivos tienen 0.0031. Por lo tanto, la incertidumbre aporta una señal práctica para detectar casos que deberían revisarse.
+
+Sin embargo, también hay errores confiados. Algunos falsos negativos tienen probabilidad casi cero para la clase positiva y baja variabilidad por MC Dropout. En esos casos, el modelo no está dudando: está seguro, pero equivocado. Esto limita el uso de MC Dropout como única herramienta de seguridad y refuerza la necesidad de combinar incertidumbre con análisis XAI, revisión de datos y métricas de fidelidad.
+
+## Fidelidad de las explicaciones
+
+La fidelidad evalúa si las atribuciones generadas por XAI reflejan realmente el comportamiento del modelo o si solo producen mapas visualmente convincentes. Para abordar esto se calcularon dos familias de métricas: Faithfulness Correlation, inspirada en Bhatt et al. (2021), y una métrica de tipo deletion AUC o Faithfulness Estimate basada en borrar progresivamente las regiones consideradas importantes. Aunque estas métricas están disponibles en bibliotecas como Quantus, en esta entrega se usó una implementación local equivalente en objetivo para mantener el pipeline reproducible con las dependencias del proyecto. Por lo tanto, no se debe afirmar que Quantus fue usado literalmente como biblioteca; lo correcto es decir que se implementó una métrica tipo Quantus-style equivalente en objetivo.
+
+La Faithfulness Correlation se calculó perturbando regiones de la entrada y correlacionando la suma de atribuciones en las regiones perturbadas con la caída de confianza del modelo hacia la clase explicada. Un valor positivo indica que las regiones marcadas como importantes tienden a producir mayor cambio en la salida cuando se alteran. Un valor cercano a cero indica relación débil. Un valor negativo sugiere que el mapa puede estar destacando regiones poco fieles bajo ese protocolo.
+
+Para fortalecer la evidencia, se agregó una evaluación ampliada sobre una muestra estratificada del test set. En total se evaluaron 260 muestras únicas: 132 de Kepler y 128 de TESS. La muestra incluye verdaderos negativos, falsos positivos, falsos negativos y verdaderos positivos, usando hasta 40 ejemplos por outcome en cada dataset. Esto mejora la versión inicial, que calculaba fidelidad principalmente sobre los pocos ejemplos seleccionados para visualización.
+
+En Kepler, la evaluación ampliada mostró fidelidad positiva pero débil/moderada. El mejor método fue Integrated Gradients con Pearson=0.1659 y Spearman=0.1668. Luego aparecen Consensus con Pearson=0.1598 y Spearman=0.1478, Saliency con Pearson=0.1267 y Spearman=0.1454, y Occlusion con Pearson=0.1255 y Spearman=0.1049. Estos valores indican que las explicaciones tienen cierta correspondencia con el comportamiento del modelo, pero no una fidelidad fuerte. La interpretación correcta es que las atribuciones son evidencia complementaria, no explicación causal definitiva.
+
+En TESS, la fidelidad ampliada fue más fuerte. Occlusion fue el método más fiel, con Pearson=0.5390 y Spearman=0.5544. Luego aparecen Consensus con Pearson=0.4013 y Spearman=0.4081, Integrated Gradients con Pearson=0.2879 y Spearman=0.2960, y Saliency con Pearson=0.1063 y Spearman=0.0999. Esto sugiere que, en TESS, las regiones marcadas como importantes por Occlusion y Consensus tienden a producir cambios reales en la confianza del modelo cuando se intervienen.
+
+La métrica de deletion AUC se mantiene como lectura complementaria de los ejemplos visuales. En Kepler, los mejores resultados fueron Consensus con AUC=0.4588 y Occlusion con AUC=0.4587. En TESS, Occlusion fue nuevamente el mejor método con AUC=0.3863 y drop@10=0.4347. Estos resultados son consistentes con la evaluación ampliada, pero deben presentarse como complemento porque se calcularon sobre menos ejemplos.
+
+El resultado más importante de fidelidad es que Grad-CAM clásico no se comportó bien en el análisis de borrado. En Kepler tuvo deletion AUC=0.1060, y en TESS obtuvo AUC=-0.1469. Esto confirma cuantitativamente lo observado visualmente: Grad-CAM 1D clásico puede generar mapas atractivos, pero en esta arquitectura no es el método más fiel al comportamiento del modelo. Por esa razón, las conclusiones principales deben basarse en Occlusion, Integrated Gradients, Grad-CAM multiescala y Consensus, dejando Grad-CAM clásico como comparación secundaria.
+
+## Limitaciones de la fidelidad
+
+Las métricas de fidelidad deben interpretarse con cautela. Primero, incluso con la mejora ampliada, no se evaluó todo el conjunto de test, sino una muestra estratificada de 260 ejemplos para mantener un costo de cómputo razonable. Por lo tanto, los valores reportados son evidencia cuantitativa más sólida que la versión inicial, pero siguen sin ser una estimación exhaustiva de toda la población.
+
+Segundo, las perturbaciones usadas para medir fidelidad pueden sacar la curva de luz fuera de la distribución natural de datos. Borrar o reemplazar regiones temporales no siempre produce una curva físicamente plausible. Si la entrada intervenida queda fuera de distribución, el cambio en la salida puede deberse tanto a la importancia real de la región como a artefactos de la intervención.
+
+Tercero, el modelo usado es una red neuronal convolucional profunda con dos ramas, mecanismos de atención y capas no lineales. En este tipo de arquitectura, las variables temporales no actúan de manera independiente. Una región puede parecer poco importante de forma aislada, pero ser relevante en interacción con otra vista o con otra zona temporal. Faithfulness Correlation y deletion AUC simplifican esa interacción al medir perturbaciones locales o progresivas.
+
+Cuarto, la literatura reciente advierte que estas métricas suelen ser más confiables para modelos lineales o relativamente simples que para modelos no lineales profundos. En línea con lo indicado por Miró-Nicolau et al. (2025), los valores de fidelidad no deben interpretarse como una validación absoluta de la explicación. En redes neuronales, estas métricas son más útiles para comparar métodos bajo un mismo protocolo que para certificar que una explicación es causalmente correcta.
+
+Quinto, la fidelidad depende del baseline, del tamaño de las ventanas perturbadas, de la normalización del mapa y de la clase objetivo explicada. Cambiar cualquiera de estos elementos puede modificar los valores. Por eso, la conclusión más robusta no es un único número, sino el patrón consistente entre métricas: Occlusion y Consensus fueron más fieles que Grad-CAM clásico, y la inspección visual coincide con esa conclusión.
+
+## Conclusiones finales
+
+Primero, los modelos aprendieron patrones morfológicos relevantes en curvas de luz. Las explicaciones muestran que muchas decisiones positivas se apoyan en la región central del tránsito, especialmente en la vista local. Esto es coherente con el problema físico y con la arquitectura de dos vistas.
+
+Segundo, las explicaciones sí ayudan a interpretar el modelo, pero no todos los métodos son igualmente confiables. Occlusion, Integrated Gradients, Grad-CAM multiescala y Consensus entregan la evidencia más defendible. Grad-CAM 1D clásico debe usarse con cautela, porque en varios casos resalta regiones poco intuitivas y obtiene baja fidelidad.
+
+Tercero, la incertidumbre es una herramienta muy útil para detectar predicciones problemáticas. Las métricas de confianza, entropía y MC Dropout alcanzan AUC superiores a 0.90 para distinguir errores de aciertos en ambos datasets. Esto sugiere que un sistema práctico debería combinar clasificación con estimación de incertidumbre.
+
+Cuarto, el análisis de focos de atención muestra que contar zonas de atención no basta para explicar los errores. La cantidad de focos tiene diferencias pequeñas entre errores y aciertos. En cambio, la posición, centralidad, dispersión, score de riesgo e incertidumbre entregan una descripción más útil del comportamiento del modelo.
+
+Quinto, las métricas de fidelidad respaldan parcialmente las explicaciones. En la evaluación ampliada, TESS muestra el resultado más fuerte con Occlusion (Pearson=0.5390, Spearman=0.5544) y Consensus (Pearson=0.4013, Spearman=0.4081). En Kepler, la fidelidad es positiva pero más moderada, con Integrated Gradients como mejor método (Pearson=0.1659, Spearman=0.1668). Esto indica que las explicaciones reflejan parte del comportamiento del modelo, pero no lo capturan completamente.
+
+Sexto, las explicaciones pueden usarse para mejorar el desempeño del sistema de ML, principalmente como herramienta indirecta: rechazo de predicciones inciertas, revisión manual de casos difíciles, active learning, detección de etiquetas dudosas, ajuste de umbrales, análisis de preprocesamiento y entrenamiento futuro de un detector auxiliar de errores.
+
+En síntesis, el aporte principal del bloque XAI no es solo producir mapas de calor, sino convertir las predicciones del modelo en un sistema más auditable. Las explicaciones permiten identificar cuándo el modelo decide por razones coherentes con la morfología del tránsito y cuándo la decisión parece inestable, dispersa o poco fiel. Esto entrega una base sólida para discutir interpretabilidad, confiabilidad y trabajo futuro en clasificación automática de exoplanetas.

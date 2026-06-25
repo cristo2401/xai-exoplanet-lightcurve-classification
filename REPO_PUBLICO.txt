@@ -1,0 +1,5 @@
+# Repositorio publico
+
+Este directorio corresponde a la version liviana preparada para GitHub de la Entrega 2.
+
+Se excluyen artefactos generados pesados como HDF5, caches y figuras intermedias duplicadas. Los HDF5 y figuras regenerables se reconstruyen con los comandos documentados en `README.md`.

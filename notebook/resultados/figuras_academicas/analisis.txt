@@ -1,0 +1,220 @@
+# Analisis general de resultados XAI
+
+Este documento resume lo obtenido en el analisis XAI de la Entrega 2. A diferencia del archivo `figuras_academicas_explicacion_unaAuna.txt`, que revisa cada figura por separado, este texto integra los resultados principales para construir una interpretacion global: desempeno del modelo, comportamiento de las explicaciones, incertidumbre, fidelidad, limitaciones y conclusiones.
+
+El analisis se basa en las tablas generadas en `notebook/resultados/tablas/` y en las figuras academicas ubicadas en `notebook/resultados/figuras_academicas/`. Los modelos no fueron reentrenados en esta etapa: se explicaron los mejores checkpoints disponibles para Kepler y TESS. En Kepler la tarea se interpreta como `PC vs no-PC`. En TESS se mantiene el objetivo campeon de la entrega: `PC+EB vs resto`, por lo que sus resultados no deben confundirse con una clasificacion estricta `PC vs resto`.
+
+## 1. Resumen ejecutivo
+
+Los resultados predictivos son fuertes en ambos conjuntos. En Kepler se obtuvo accuracy=96.70%, precision=90.74%, recall=95.28%, specificity=97.12%, F1=92.95% sobre 1574 muestras. En TESS se obtuvo accuracy=97.10%, precision=90.24%, recall=92.83%, specificity=97.97%, F1=91.52% sobre 1655 muestras. Esto indica que los modelos ya tienen desempeno suficiente para justificar un analisis explicativo: no se esta explicando un clasificador aleatorio, sino modelos con alta capacidad predictiva.
+
+La matriz de confusion normalizada muestra que Kepler clasifica correctamente 97.12% de los negativos y 95.28% de los positivos. TESS clasifica correctamente 97.97% de los negativos y 92.83% de los positivos. La principal diferencia es que TESS tiene una proporcion mayor de falsos negativos dentro de la clase positiva (7.17% frente a 4.72% en Kepler), aunque mantiene menos falsos positivos dentro de la clase negativa (2.03% frente a 2.88% en Kepler).
+
+El analisis XAI muestra una conclusion importante: no todos los metodos de explicabilidad se comportan igual. Grad-CAM 1D clasico es visualmente llamativo, pero en varias figuras activa regiones poco intuitivas o incluso contrarias al transito central. Esto no significa necesariamente que el modelo este mal; significa que la version clasica de Grad-CAM no es la explicacion mas fiel para esta arquitectura y este tipo de entrada temporal. En cambio, occlusion, Integrated Gradients, Grad-CAM multiescala y mapas de consenso entregan explicaciones mas consistentes con la morfologia esperada.
+
+La incertidumbre fue una de las senales mas utiles. Las metricas MaxLike, entropia predictiva, incertidumbre aleatoria y MC Dropout separan bien errores de aciertos. En Kepler, la mejor senal obtiene AUC cercano a 0.913 para detectar errores; en TESS, AUC cercano a 0.929. Esto sugiere que las explicaciones y la incertidumbre pueden usarse como capa de auditoria, rechazo o priorizacion manual, aunque no como prueba causal absoluta.
+
+## 2. Rendimiento predictivo y lectura de la matriz normalizada
+
+En Kepler hay 1179 verdaderos negativos, 35 falsos positivos, 17 falsos negativos y 343 verdaderos positivos. La matriz normalizada por fila real es especialmente util porque evita que la clase negativa dominante oculte los errores sobre positivos. La tasa de falso negativo de 4.72% es baja, pero no nula; estos casos son relevantes para XAI porque representan candidatos positivos que el modelo no logra recuperar.
+
+En TESS hay 1348 verdaderos negativos, 28 falsos positivos, 20 falsos negativos y 259 verdaderos positivos. El modelo tiene muy buena especificidad (97.97%), por lo que rechaza bien la mayoria de los objetos negativos. Sin embargo, el recall positivo baja a 92.83%. En un problema astronomico esto importa porque un falso negativo puede significar perder un objeto de interes. Por eso tiene sentido complementar la prediccion con incertidumbre y XAI para detectar casos que ameriten revision.
+
+La comparacion entre datasets tambien refleja una diferencia morfologica: Kepler tiene vistas mas largas y de mayor resolucion temporal, mientras que TESS trabaja con senales mas cortas. Aun asi, las figuras muestran que TESS conserva informacion central suficiente para explicar muchas decisiones, sobre todo en la vista local. La diferencia no esta solo en la arquitectura, sino tambien en resolucion temporal, normalizacion, definicion de etiquetas y objetivo experimental.
+
+## 3. Conteo de focos de atencion y varianza espacial
+
+Se conto la cantidad de zonas de atencion por muestra usando mapas de relevancia target-aware. La hipotesis inicial era razonable: los casos faciles podrian tener pocos focos compactos, mientras que los errores podrian tener muchos focos dispersos. Los resultados muestran que esa hipotesis solo se cumple parcialmente.
+
+Para KEPLER, los promedios por tipo de resultado son:
+- TN: n=1179, focos=5.682, varianza_posicional=0.0752, entropia=0.857, ratio_central=0.250, riesgo_atencion=0.371.
+- FP: n=35, focos=5.714, varianza_posicional=0.0549, entropia=0.835, ratio_central=0.408, riesgo_atencion=0.403.
+- FN: n=17, focos=5.412, varianza_posicional=0.0532, entropia=0.811, ratio_central=0.483, riesgo_atencion=0.402.
+- TP: n=343, focos=6.230, varianza_posicional=0.0539, entropia=0.826, ratio_central=0.410, riesgo_atencion=0.348.
+
+Para TESS, los promedios por tipo de resultado son:
+- TN: n=1348, focos=8.181, varianza_posicional=0.0639, entropia=0.920, ratio_central=0.256, riesgo_atencion=0.414.
+- FP: n=28, focos=7.750, varianza_posicional=0.0467, entropia=0.899, ratio_central=0.352, riesgo_atencion=0.355.
+- FN: n=20, focos=8.150, varianza_posicional=0.0483, entropia=0.901, ratio_central=0.382, riesgo_atencion=0.447.
+- TP: n=259, focos=8.552, varianza_posicional=0.0498, entropia=0.902, ratio_central=0.352, riesgo_atencion=0.332.
+
+La cantidad total de focos por si sola no separa bien errores y aciertos. En Kepler, los errores tienen en promedio 5.62 focos y los aciertos 5.81; en TESS los errores tienen 7.92 focos y los aciertos 8.24. Esta diferencia es pequena, por lo que el conteo aislado no deberia presentarse como detector robusto de errores.
+
+La varianza y la centralidad son mas informativas. Los verdaderos negativos tienden a tener menor importancia central y mayor dispersion, lo que tiene sentido: cuando no hay transito claro, el modelo no deberia concentrarse necesariamente en la ventana central. En cambio, verdaderos positivos, falsos positivos y falsos negativos suelen concentrar mas relevancia cerca del centro, porque todos contienen algun patron que el modelo interpreta o deberia interpretar como transito. Esto es util para explicar por que un falso positivo puede ocurrir: la curva puede contener una estructura central parecida a transito, aunque su etiqueta real sea negativa.
+
+La conclusion practica es que los focos de atencion son utiles como descriptor morfologico, pero no bastan para mejorar la clasificacion de forma directa. La combinacion de centralidad, varianza, incertidumbre y score de riesgo XAI es mas prometedora que usar solo el numero de focos.
+
+## 4. Score de riesgo XAI e interpretacion de los violin plots
+
+Los violin plots del score de riesgo XAI resumen como se distribuyen las explicaciones por resultado de la matriz de confusion. Un score alto indica una explicacion mas sospechosa: mayor dispersion, menor estabilidad o menor consistencia con una region esperada. En Kepler, el score promedio de riesgo es mayor en falsos positivos y falsos negativos que en verdaderos positivos. En TESS, los falsos negativos muestran el riesgo promedio mas alto, lo que coincide con la idea de que estos ejemplos son mas ambiguos o dificiles para el modelo.
+
+Sin embargo, no se debe interpretar el score como una nueva etiqueta. Hay solapamiento entre las distribuciones. Esto significa que un caso con score alto no necesariamente es error, y un caso con score bajo no necesariamente es correcto. Su valor esta en priorizar muestras para inspeccion, no en reemplazar el clasificador.
+
+La lectura mas defensible para el informe es: los errores tienden a ocupar zonas de mayor riesgo explicativo o menor confianza, pero la separacion no es perfecta. Por tanto, XAI funciona como herramienta de auditoria y diagnostico, no como garantia matematica de correccion.
+
+## 5. Comparacion entre metodos XAI
+
+Las figuras de importancia promedio muestran que Saliency e Integrated Gradients suelen resaltar cambios locales de la senal, especialmente pendientes y regiones cercanas al transito. Occlusion es mas interpretable desde el punto de vista causal local: mide cuanto cambia la salida cuando se elimina una ventana temporal. Por eso, cuando occlusion se concentra en el transito central, la conclusion es mas facil de defender: si al tapar esa zona cambia la prediccion, entonces esa zona efectivamente influia en la salida.
+
+Grad-CAM 1D clasico es el metodo mas problematico en estos resultados. En varias muestras activa zonas laterales o regiones opuestas al transito. Esto puede ocurrir por la baja resolucion del ultimo mapa convolucional, por el pooling temporal, por la interpolacion al largo original y por el uso de ReLU que descarta evidencia negativa. En una red no lineal con dos ramas, la ultima capa convolucional puede no conservar una correspondencia fina punto-a-punto con la curva de luz original. Por eso, Grad-CAM clasico debe quedar como material complementario, no como principal evidencia.
+
+Grad-CAM multiescala mejora esa limitacion porque combina informacion de distintas resoluciones, pero aun asi no alcanza la claridad de occlusion o Integrated Gradients en todos los casos. El mapa de consenso es util para presentacion porque reduce dependencia de un unico metodo: si varias tecnicas coinciden en una zona, la explicacion es mas confiable visualmente.
+
+## 6. Centralidad de las explicaciones
+
+En KEPLER vista global, el metodo con mayor ratio de importancia central es gradcam_multiscale (0.392).
+En KEPLER vista local, el metodo con mayor ratio de importancia central es gradcam_multiscale (0.718).
+En TESS vista global, el metodo con mayor ratio de importancia central es integrated_gradients (0.597).
+En TESS vista local, el metodo con mayor ratio de importancia central es integrated_gradients (0.609).
+
+La centralidad confirma que la vista local concentra mejor la evidencia del transito que la vista global. En Kepler, Integrated Gradients y Grad-CAM multiescala superan 0.71 de importancia central en la vista local. En TESS, Integrated Gradients alcanza alrededor de 0.61 en global y local. Esto es coherente con el problema: la senal discriminativa suele estar cerca del evento de transito, especialmente en positivos y falsos positivos.
+
+No obstante, una centralidad alta no implica automaticamente una prediccion correcta. Un falso positivo puede tener alta centralidad porque efectivamente existe una forma parecida a transito en el centro. En ese caso, XAI no contradice al modelo; explica por que el modelo se equivoco.
+
+## 7. Incertidumbre: MaxLike, MC Dropout, aleatoria y epistemica
+
+La incertidumbre fue el bloque mas solido para detectar errores. Las mejores metricas para separar errores de aciertos fueron:
+
+Kepler:
+- aleatoric_uncertainty: AUC=0.913 (high=risk)
+- target_confidence: AUC=0.913 (low=risk)
+- maxlike_entropy: AUC=0.913 (high=risk)
+- mc_std: AUC=0.908 (high=risk)
+- mc_dropout_std_probability: AUC=0.908 (high=risk)
+
+TESS:
+- target_confidence: AUC=0.929 (low=risk)
+- aleatoric_uncertainty: AUC=0.928 (high=risk)
+- maxlike_entropy: AUC=0.928 (high=risk)
+- mc_std: AUC=0.924 (high=risk)
+- mc_dropout_std_probability: AUC=0.924 (high=risk)
+
+Esto significa que los errores suelen tener menor confianza objetivo, mayor entropia y mayor desviacion por MC Dropout. En Kepler, los falsos negativos tienen confianza media de 0.736 y MC std media de 0.025, mientras que los verdaderos negativos tienen confianza media de 0.986 y MC std media de 0.0017. En TESS, los falsos negativos tienen confianza media de 0.614 y MC std media de 0.0239, frente a verdaderos positivos con confianza media de 0.977 y MC std media de 0.0031.
+
+La descomposicion entre incertidumbre aleatoria y epistemica muestra que la parte epistemica estimada por MC Dropout es pequena en promedio. Esto no significa que no exista incertidumbre del modelo; significa que MC Dropout, aplicado sobre este checkpoint y esta arquitectura, captura una variabilidad limitada. Para una estimacion epistemica mas fuerte seria mejor usar Deep Ensembles o varios checkpoints entrenados con semillas distintas.
+
+Un punto importante es que hay errores muy confiados. Por ejemplo, algunos falsos negativos tienen probabilidad casi cero para la clase positiva y MC Dropout tambien cercano a cero. Esos casos no son detectados por incertidumbre: el modelo esta seguro, pero equivocado. Esto refuerza la necesidad de combinar incertidumbre con revision de datos, calidad de etiquetas y XAI morfologico.
+
+## 8. Fidelidad de las explicaciones
+
+Se calcularon metricas de fidelidad mediante dos ideas complementarias: curvas de borrado/deletion y correlacion entre importancia asignada y cambio real de salida. En este protocolo, valores mas altos indican que al intervenir las zonas consideradas importantes se produce un cambio mayor o mas consistente en la prediccion.
+
+Nota posterior: la carpeta `fidelidad_ampliada/` contiene una version reforzada de Faithfulness Correlation sobre 260 muestras estratificadas del test set. Para el informe final conviene reportar esa evaluacion ampliada como evidencia cuantitativa principal, y dejar las curvas/figuras de fidelidad originales como material complementario.
+
+Mejores resultados de deletion AUC:
+
+Kepler:
+- consensus: AUC=0.459, drop@10=0.551, monotonicidad=0.633
+- occlusion: AUC=0.459, drop@10=0.509, monotonicidad=0.800
+- gradcam_multiscale: AUC=0.381, drop@10=0.447, monotonicidad=0.700
+- integrated_gradients: AUC=0.328, drop@10=0.363, monotonicidad=0.633
+
+TESS:
+- occlusion: AUC=0.386, drop@10=0.435, monotonicidad=0.667
+- gradcam_multiscale: AUC=0.213, drop@10=0.239, monotonicidad=0.600
+- consensus: AUC=0.142, drop@10=0.190, monotonicidad=0.533
+- integrated_gradients: AUC=0.112, drop@10=0.123, monotonicidad=0.633
+
+Mejores resultados de Faithfulness Correlation:
+
+Kepler:
+- integrated_gradients: Pearson=0.212, Spearman=0.246, n_valido=5
+- occlusion: Pearson=0.211, Spearman=0.159, n_valido=5
+- consensus: Pearson=0.196, Spearman=0.154, n_valido=5
+- saliency: Pearson=0.143, Spearman=0.170, n_valido=5
+
+TESS:
+- occlusion: Pearson=0.496, Spearman=0.514, n_valido=6
+- consensus: Pearson=0.365, Spearman=0.421, n_valido=6
+- gradcam_multiscale: Pearson=0.315, Spearman=0.374, n_valido=6
+- saliency: Pearson=0.205, Spearman=0.205, n_valido=6
+
+La lectura principal es que occlusion es el metodo mas fuerte en TESS y uno de los mas fuertes en Kepler. En Kepler, consensus y occlusion tienen deletion AUC muy similares. Integrated Gradients tiene la mejor correlacion promedio en Kepler, aunque con alta variabilidad entre ejemplos. Grad-CAM clasico queda mal posicionado, especialmente en TESS, donde obtiene deletion AUC negativo. Esto coincide con la inspeccion visual: no conviene defender Grad-CAM clasico como explicacion principal.
+
+Estas metricas deben interpretarse con cautela. Primero, el calculo de fidelidad se aplico sobre ejemplos seleccionados, no necesariamente sobre todo el test set. Segundo, las redes convolucionales profundas son modelos altamente no lineales; en este contexto, una perturbacion local puede cambiar distribuciones internas de manera no comparable a la senal real. Tercero, la fidelidad depende del baseline usado para borrar o reemplazar regiones. Por lo tanto, el valor numerico no demuestra causalidad absoluta; sirve para comparar metodos bajo un protocolo fijo.
+
+## 9. Analisis contrafactual
+
+Los contrafactuales muestran que borrar la ventana central en ambas vistas es la intervencion mas fuerte. En Kepler, `erase_both_transits` produce el mayor cambio absoluto medio de confianza (0.461) y cambia la prediccion en 50.00% de los ejemplos seleccionados. La segunda intervencion mas fuerte es `erase_global_transit` con cambio absoluto medio 0.324.
+
+En TESS, `erase_both_transits` tambien es la intervencion con mayor efecto, con cambio absoluto medio de confianza 0.511 y cambio de prediccion en 33.33% de los ejemplos seleccionados. La segunda intervencion mas fuerte es `erase_global_transit` con cambio absoluto medio 0.236.
+
+Esto respalda una conclusion importante: el modelo usa informacion de la zona central de transito, especialmente cuando se modifica global y local simultaneamente. El efecto no es identico entre Kepler y TESS, porque la resolucion, longitud de ventana y objetivo de etiquetas son distintos. En TESS, modificar solo la vista local no siempre cambia la etiqueta, lo que sugiere que el modelo tambien usa contexto global o patrones externos al centro.
+
+## 10. Calibracion
+
+En Kepler, la calibracion raw ya es fuerte: ECE=0.0111, Brier=0.0283 y NLL=0.1025. La calibracion con temperatura empeora ECE a 0.0206, Brier a 0.0294 y NLL a 0.1055. Por tanto, para Kepler conviene reportar la salida raw como mejor calibrada bajo estas metricas.
+
+En TESS, temperature scaling mejora levemente Brier (0.0284 a 0.0278) y NLL (0.0943 a 0.0935), pero empeora ECE (0.0280 a 0.0310). La conclusion es mixta: la temperatura suaviza la probabilidad promedio, pero no mejora todos los criterios de calibracion. Para el informe, lo correcto es presentar ambos y explicar que la calibracion no cambia la interpretacion principal del modelo.
+
+## 11. Lectura por casos representativos
+
+Los casos positivos correctos de alta confianza suelen mostrar mapas concentrados alrededor del transito. Esto es el comportamiento deseado: la explicacion apunta a la region morfologicamente relevante. Los negativos correctos de alta confianza pueden mostrar atencion mas dispersa o en regiones laterales, lo que tambien es razonable porque la evidencia de clase negativa muchas veces corresponde a la ausencia de un transito central convincente.
+
+Los falsos positivos son particularmente informativos. En varios de ellos, el modelo se fija en una estructura central parecida a transito. Desde el punto de vista XAI, esto no es un fallo de la explicacion; es una explicacion plausible del error. El modelo detecta una morfologia que se parece a la clase positiva, aunque la etiqueta real sea negativa.
+
+Los falsos negativos son mas complejos. Algunos presentan senales centrales, pero el modelo no las transforma en probabilidad positiva. Esto puede ocurrir por ruido, forma no canonica del transito, conflicto entre vista global y local, normalizacion, o porque la etiqueta positiva incluye clases con morfologias diferentes. Estos casos son buenos candidatos para inspeccion manual o revision del preprocesamiento.
+
+Los casos cercanos al umbral y los de mayor incertidumbre son los mejores para mostrar el valor practico de MC Dropout. No necesariamente son los mas astronomicamente interesantes, pero son los mas utiles para justificar un mecanismo de rechazo: si el modelo no esta seguro, se puede enviar el caso a revision humana o a un modelo mas costoso.
+
+## 12. Que figuras conviene usar en el informe
+
+Para el cuerpo principal del informe se recomiendan las seis figuras principales de `figuras_academicas/espanol/figuras_principales/` o sus equivalentes en ingles:
+
+- matriz de confusion normalizada por fila real para Kepler;
+- matriz de confusion normalizada por fila real para TESS;
+- violin plot del score de riesgo XAI para Kepler;
+- violin plot del score de riesgo XAI para TESS;
+- violin plot de focos y varianza de atencion para Kepler;
+- violin plot de focos y varianza de atencion para TESS.
+
+Como material complementario se recomienda incluir:
+
+- curvas de fidelidad por metodo;
+- correlacion de fidelidad por metodo;
+- descomposicion de incertidumbre;
+- calibracion/reliability;
+- mapas individuales de un verdadero positivo, falso positivo, falso negativo y ejemplo cercano al umbral;
+- analisis contrafactual.
+
+La combinacion mas clara para defender el trabajo es: rendimiento global alto, matriz normalizada para transparencia de errores, XAI centralidad/dispersion para interpretar morfologia, uncertainty para detectar casos dudosos, y fidelidad para justificar que las explicaciones no son solamente decorativas.
+
+## 13. Respuesta a si las explicaciones pueden mejorar el modelo
+
+Si, pero no de forma automatica ni directa. Las explicaciones pueden mejorar el sistema completo si se usan como variables de control o auditoria. Por ejemplo, se puede rechazar o priorizar para revision humana una muestra con baja confianza, alta incertidumbre, baja fidelidad o atencion muy dispersa. Tambien se pueden usar para detectar errores sistematicos de preprocesamiento, etiquetas sospechosas o clases morfologicamente mezcladas.
+
+Una forma concreta de mejora futura seria entrenar un segundo clasificador de error usando como features la confianza, MC std, entropia, score de riesgo XAI, centralidad, varianza posicional y conteo de focos. Ese clasificador no reemplazaria al modelo principal; decidiria cuando confiar, cuando rechazar y cuando pedir revision. Otra opcion es usar active learning: seleccionar falsos negativos probables, falsos positivos probables o casos con alta incertidumbre para re-etiquetado o aumento de datos.
+
+Tambien podria aplicarse regularizacion guiada por explicabilidad, por ejemplo penalizando explicaciones que ignoran la ventana central en ejemplos positivos confiables. Esto debe hacerse con cuidado: forzar siempre atencion central podria perjudicar casos reales donde la informacion relevante este desplazada o donde la vista global contenga artefactos importantes.
+
+## 14. Limitaciones
+
+La primera limitacion es que los metodos XAI son post-hoc. Explican la prediccion de un modelo ya entrenado, pero no prueban causalidad fisica. Un mapa de calor indica sensibilidad del modelo, no necesariamente importancia astronomica real.
+
+La segunda limitacion es que las metricas de fidelidad son mas estables en modelos simples o lineales que en redes neuronales profundas. En una CNN con dos ramas, atencion SE, pooling y capas densas, las interacciones no lineales pueden hacer que una perturbacion local tenga efectos indirectos. Por eso, los valores de faithfulness correlation y deletion AUC deben leerse como comparacion relativa entre metodos, no como verdad absoluta.
+
+La tercera limitacion es la definicion de TESS. El objetivo usado es triage (`PC+EB vs resto`), no una replica estricta `PC vs resto`. Esto mejora desempeno operacional para detectar eventos transit-like, pero cambia la interpretacion cientifica respecto al paper original.
+
+La cuarta limitacion es que MC Dropout no captura toda la incertidumbre epistemica. Al activar dropout en inferencia sobre un solo checkpoint se obtiene una aproximacion barata, pero no equivalente a entrenar varios modelos independientes. Deep Ensembles seria una extension mas robusta.
+
+La quinta limitacion es que algunos analisis de fidelidad se calcularon en ejemplos seleccionados para visualizacion. Para una conclusion estadistica mas fuerte, se deberia ejecutar el protocolo en una muestra mayor o en todo el test set, con intervalos de confianza.
+
+## 15. Conclusiones generales
+
+Primero, los modelos tienen desempeno alto y sus errores son relativamente pocos. Esto permite que el analisis XAI se enfoque en entender comportamiento, no en justificar un modelo debil.
+
+Segundo, el modelo efectivamente usa regiones compatibles con el transito en muchos casos positivos, especialmente en la vista local. Esto se observa en Integrated Gradients, occlusion, mapas de consenso y contrafactuales sobre la ventana central.
+
+Tercero, Grad-CAM 1D clasico no es suficientemente confiable como metodo principal para estas curvas de luz. Debe mostrarse como comparacion metodologica o material suplementario, destacando que Grad-CAM multiescala y occlusion son mas interpretables en este problema.
+
+Cuarto, la incertidumbre es muy util para detectar errores. MaxLike/entropy/MC Dropout alcanzan AUC sobre 0.90 para separar errores de aciertos en ambos datasets. Esto es una de las conclusiones mas fuertes del trabajo.
+
+Quinto, el conteo de focos de atencion por si solo no explica suficientemente los errores. La varianza espacial, centralidad y score de riesgo agregan mas informacion, pero aun asi deben tratarse como diagnostico exploratorio.
+
+Sexto, XAI puede mejorar el sistema si se usa para auditoria, rechazo, active learning o deteccion de etiquetas sospechosas. La mejora mas realista no es cambiar la prediccion directamente con el mapa de calor, sino usar las explicaciones como senales auxiliares para decidir cuando confiar en el modelo y cuando pedir revision.
+
+## 16. Recomendacion final para presentar
+
+La narrativa recomendada es la siguiente: se entrenaron modelos competitivos para Kepler y TESS; luego se implemento un bloque XAI avanzado con Saliency, SmoothGrad, Integrated Gradients, Grad-CAM 1D, Grad-CAM multiescala, Occlusion, mapas de consenso, contrafactuales y MC Dropout. Las explicaciones muestran que el modelo suele concentrarse en la region del transito, pero tambien revelan limitaciones de ciertos metodos como Grad-CAM clasico. Las metricas de fidelidad respaldan mejor a occlusion/consensus/Integrated Gradients que a Grad-CAM clasico. Finalmente, la incertidumbre permite identificar casos dificiles con alto poder discriminativo, por lo que el aporte XAI mas fuerte es servir como herramienta de auditoria y control de calidad del clasificador.
+
+Para trabajo futuro, la linea mas prometedora es construir un sistema de prediccion con rechazo: aceptar predicciones de alta confianza y explicacion consistente, revisar manualmente casos con alta incertidumbre o riesgo XAI, y usar esos casos para reentrenamiento activo. Esto conectaria directamente la explicabilidad con una mejora medible del desempeno operacional.

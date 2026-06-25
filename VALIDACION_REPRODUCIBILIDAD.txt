@@ -1,0 +1,52 @@
+# Validacion de reproducibilidad y limpieza para GitHub
+
+Fecha de validacion: 2026-06-24
+
+## Limpieza aplicada
+
+- Se eliminaron carpetas `__pycache__/` y archivos `*.pyc`.
+- Se eliminaron archivos HDF5 generados de `datos_procesados_h5/`.
+- Se elimino el respaldo/intermedio `tfrecords_TESS/_test-00000-of-00001`, ya que los scripts usan `test-*`.
+- Se agrego `.gitignore` para evitar versionar entornos, caches, ZIPs y HDF5 generados.
+- Se agrego `.gitattributes` para normalizar archivos de texto/codigo.
+- No quedan archivos individuales mayores a 100 MB.
+
+## Datos
+
+Los TFRecords necesarios se mantienen en:
+
+- `tfrecords_KEPLER/`
+- `tfrecords_TESS/`
+
+Los HDF5 se regeneran localmente con:
+
+```bash
+python codigo/convertir_kepler_tfrecord_a_h5.py --output_h5 datos_procesados_h5/kepler_dataset.h5
+python codigo/convertir_tess_tfrecord_a_h5.py --mode pc_only --output_h5 datos_procesados_h5/tess_dataset.h5
+python codigo/convertir_tess_tfrecord_a_h5.py --mode triage --output_h5 datos_procesados_h5/tess_dataset_triage.h5
+```
+
+## Pruebas ejecutadas
+
+Se ejecutaron pruebas en un directorio temporal `/tmp/xai_github_entrega2_smoke`, sin modificar los resultados finales del repositorio.
+
+1. Compilacion de scripts Python con `py_compile`.
+2. Conversion completa de Kepler TFRecord a HDF5 temporal.
+3. Conversion completa de TESS TFRecord a HDF5 temporal en modo `triage`.
+4. Smoke test XAI para Kepler con parametros reducidos:
+
+```bash
+python xai_mejores_modelos.py --dataset kepler --mc-samples 2 --max-examples 1 --smooth-samples 1 --ig-steps 2 --batch-size 512 --device cuda
+```
+
+5. Smoke test XAI para TESS con parametros reducidos:
+
+```bash
+python xai_mejores_modelos.py --dataset tess --mc-samples 2 --max-examples 1 --smooth-samples 1 --ig-steps 2 --batch-size 512 --device cuda
+```
+
+Ambos smoke tests generaron tablas y figuras XAI correctamente.
+
+## Nota
+
+Para reproducir los resultados completos, usar los comandos del `README.md`. Los smoke tests solo verifican que el flujo principal funciona, no regeneran la totalidad de experimentos con los parametros finales.

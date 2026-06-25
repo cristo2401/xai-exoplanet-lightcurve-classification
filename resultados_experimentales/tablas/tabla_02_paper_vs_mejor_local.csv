@@ -1,0 +1,5 @@
+dataset,source,objective,threshold,accuracy,precision,recall,f1,mcc,ap,notes
+Kepler,paper_xie_2025,PC vs no-PC,0.5,0.962,0.89,0.95,0.957,0.894,,Reported in paper table (threshold 0.5)
+Kepler,mejor_local,PC vs no-PC,0.5,0.9669631512071156,0.9074074074074074,0.9527777777777776,0.929539295392954,0.908440279300352,0.9450078410731126,Champion local config (zscore + aug)
+TESS,paper_xie_2025,PC vs no-PC,0.5,0.999,0.97,1.0,0.995,0.979,,Reported in paper table (threshold 0.5)
+TESS,mejor_local,(PC+EB) vs resto (triage),0.5,0.9613293051359516,0.8412698412698413,0.949820788530466,0.8922558922558923,0.8711729606739531,0.97524959240976,Objective differs from paper (triage objective)

@@ -1,0 +1,11 @@
+dataset,stage,objective,threshold,accuracy,precision,recall,f1,mcc,ap,source
+Kepler,baseline_0.5,segun configuracion baseline,0.5,0.9186785260482846,0.7974358974358975,0.8638888888888889,0.8293333333333334,0.7771386642976174,0.8880303110756228,resultados_replicacion/summary_metrics_with_best_threshold.csv
+Kepler,strict_0.5,PC vs no-PC (replicación estricta),0.5,0.9023668639053254,0.8090277777777778,0.7516129032258064,0.7792642140468228,0.717495300595348,0.7367095665771254,resultados_replicacion_strict/paper_vs_strict_replication.csv
+Kepler,best_effort_0.5,segun barrido best effort,0.5,0.9304733727810652,0.8233532934131736,0.8870967741935484,0.8540372670807453,0.8094575747154479,0.9163019881500408,resultados_replicacion_best_effort/summary_best_effort.csv
+Kepler,mejor_local_0.5,PC vs no-PC,0.5,0.9669631512071156,0.9074074074074074,0.9527777777777776,0.929539295392954,0.908440279300352,0.9450078410731126,mejores_resultados/mejores_vs_paper.csv
+TESS,baseline_0.5,segun configuracion baseline,0.5,0.9704463208685162,0.0,0.0,0.0,0.0,0.3609996552963374,resultados_replicacion/summary_metrics_with_best_threshold.csv
+TESS,strict_0.5,PC vs no-PC (replicación estricta),0.5,0.9727479182437548,1.0,0.0769230769230769,0.1428571428571428,0.2735360878608229,0.4312129968506521,resultados_replicacion_strict/paper_vs_strict_replication.csv
+TESS,best_effort_0.5,segun barrido best effort,0.5,0.9704769114307344,0.0,0.0,0.0,0.0,0.123186604692772,resultados_replicacion_best_effort/summary_best_effort.csv
+TESS,mejor_local_0.5,(PC+EB) vs resto (triage),0.5,0.9613293051359516,0.8412698412698413,0.949820788530466,0.8922558922558923,0.8711729606739531,0.97524959240976,mejores_resultados/mejores_vs_paper.csv
+Kepler,mejor_local_best_thr,PC vs no-PC,0.5000000000000001,0.9669631512071156,0.9074074074074074,0.9527777777777777,0.9295392953929539,0.9084402793003519,0.9450078410731126,mejores_resultados/metricas/kepler_mejor_metrics.json
+TESS,mejor_local_best_thr,Triage: (PC + EB) vs resto,0.7500000000000002,0.9709969788519638,0.9024390243902439,0.9283154121863799,0.9151943462897526,0.8978363464295825,0.9752495924097601,mejores_resultados/metricas/tess_mejor_metrics.json

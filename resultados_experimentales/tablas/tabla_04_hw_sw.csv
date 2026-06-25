@@ -1,0 +1,8 @@
+Componente,Detalle
+SO,Ubuntu 24.04.2 LTS
+Kernel,6.17.0-29-generic
+CPU,Intel(R) Core(TM) i9-10900F CPU @ 2.80GHz
+CPU hilos lógicos,20
+GPU,"NVIDIA GeForce RTX 3070, 580.95.05, 8192 MiB"
+Info CUDA driver,| NVIDIA-SMI 580.95.05 Driver Version: 580.95.05 CUDA Version: 13.0 |
+Entorno Python,python=3.11.14 | torch=2.6.0+cu124 | tensorflow=2.21.0 | numpy=2.4.3 | pandas=3.0.1 | sklearn=1.8.0 | torch_cuda=12.4 | cuda_available=True

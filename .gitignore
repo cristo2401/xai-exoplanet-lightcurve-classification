@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+*~
+.vscode/
+.idea/
+
+# Generated data and local artifacts
+# HDF5 files are generated from TFRecords using codigo/convertir_*_tfrecord_a_h5.py
+datos_procesados_h5/*.h5
+
+# Local compressed exports
+*.zip
+
+# Optional local logs/checkpoints from experiments
+*.log
+runs/
+wandb/
+
+# Keep reproducible packaged results intentionally included under:
+# resultados_experimentales/, resultados_xai/, notebook/resultados/, mejores_resultados/
