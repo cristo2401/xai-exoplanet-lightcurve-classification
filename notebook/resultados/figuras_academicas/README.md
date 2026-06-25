@@ -4,6 +4,7 @@ Esta carpeta contiene dos versiones de las figuras listas para informe o paper:
 
 - `espanol/`: nombres, titulos y organizacion en espanol.
 - `english/`: nombres, titulos y organizacion en ingles.
+- `imagenes_que_faltan_en_ingles/`: figuras en ingles con los mismos nombres de archivo usados originalmente, pensadas para reemplazo directo en Overleaf sin cambiar rutas.
 
 ## Estructura
 
@@ -14,6 +15,7 @@ figuras_academicas/
 ├── conclusión_final.txt
 ├── figuras_academicas_explicacion_unaAuna.txt
 ├── fidelidad_ampliada/
+├── imagenes_que_faltan_en_ingles/
 ├── espanol/
 │   ├── figuras_principales/
 │   └── material_suplementario/
@@ -49,6 +51,10 @@ El archivo `conclusión_final.txt` contiene una seccion lista para informe. Resp
 ## Fidelidad ampliada
 
 La carpeta `fidelidad_ampliada/` contiene una evaluacion tipo Faithfulness Correlation sobre 260 muestras estratificadas del test set. Esta carpeta documenta que Quantus no fue usado literalmente, explica por que SHAP se elimina del paper, y entrega tablas/figuras nuevas para defender mejor la fidelidad XAI.
+
+## Imagenes faltantes en ingles
+
+La carpeta `imagenes_que_faltan_en_ingles/` contiene siete figuras listas para Overleaf con los mismos nombres pedidos originalmente. Las tres figuras de fidelidad ampliada fueron regeneradas con rotulos en ingles; las cuatro figuras XAI restantes corresponden a las versiones academicas en ingles ya generadas en el material suplementario.
 
 ## Explicacion una a una
 
